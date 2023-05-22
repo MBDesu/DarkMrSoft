@@ -1,0 +1,31 @@
+p {
+  max-width: 700px;
+}
+
+.app-content {
+  height: calc(100vh - 64px - 2em);
+  width: 100vw;
+  margin: 1em;
+}
+
+.app-title-bar {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.credit {
+  a {
+    color: inherit;
+    text-decoration: inherit;
+  }
+}
+
+.viewport {
+  height: 400px;
+}
+
+.hex-panel {
+  min-width: 700px;
+  margin-right: 3em;
+}

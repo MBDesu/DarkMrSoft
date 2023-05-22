@@ -1,5 +1,5 @@
 {
-  "name": "cps2-util-web",
+  "name": "darkmrsoft",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -8,16 +8,29 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
+  "overrides": {
+    "@angular/fire": {
+      "@angular/common": "^16.0.0",
+      "@angular/core": "^16.0.0",
+      "@angular/platform-browser": "^16.0.0",
+      "@angular/platform-browser-dynamic": "^16.0.0"
+    }
+  },
   "private": true,
   "dependencies": {
     "@angular/animations": "^16.0.0",
+    "@angular/cdk": "^16.0.1",
     "@angular/common": "^16.0.0",
     "@angular/compiler": "^16.0.0",
     "@angular/core": "^16.0.0",
+    "@angular/fire": "^7.5.0",
     "@angular/forms": "^16.0.0",
+    "@angular/material": "^16.0.1",
     "@angular/platform-browser": "^16.0.0",
     "@angular/platform-browser-dynamic": "^16.0.0",
     "@angular/router": "^16.0.0",
+    "firebase": "^9.22.0",
+    "jszip": "^3.10.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.13.0"

@@ -1,0 +1,24 @@
+<div class="toolbar">
+  <div class="toolbar-item">
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Jump to offset</mat-label>
+      <input matInput placeholder="8e00" (keyup)="onOffsetChange($event)" />
+    </mat-form-field>
+  </div>
+  <div class="toolbar-item">
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Bytes per line</mat-label>
+      <input matInput placeholder="16" (keyup)="onBytesPerLineChange($event)" />
+    </mat-form-field>
+  </div>
+  <div class="toolbar-item">
+    <mat-button-toggle-group name="endianness" (change)="onEndiannessChange($event)">
+      <mat-button-toggle value="little" [checked]="endianness === 'little'">Little</mat-button-toggle>
+      <mat-button-toggle value="big" [checked]="endianness === 'big'">Big</mat-button-toggle>
+    </mat-button-toggle-group>
+    <span>&nbsp;Endian</span>
+  </div>
+</div>
+<cdk-virtual-scroll-viewport itemSize="17" minBufferPx="200" maxBufferPx="400" class="viewport">
+  <code *cdkVirtualFor="let row of hexdumpRows">{{ row.offset }} {{ row.hex }} {{ row.ascii }}<br /></code>
+</cdk-virtual-scroll-viewport>

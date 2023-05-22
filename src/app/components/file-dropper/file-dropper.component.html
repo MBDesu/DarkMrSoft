@@ -1,0 +1,22 @@
+<div class="drop-box" cps2FileDroppable *ngIf="!files.length || files.length < 2" (files)="filesDropped($event)" (error)="gotError($event)">
+  <span>
+    <button mat-mini-fab class="upload-button" (click)="fileUpload.click()">
+      <mat-icon>file_upload</mat-icon>
+    </button>
+    <input #fileUpload type="file" (change)="filesPicked($event)" [hidden]="true" accept=".mra,.zip" multiple />
+    &nbsp; or drag files here
+  </span>
+</div>
+<div *ngFor="let file of files; let i = index">
+  <span *ngIf="file">
+    <!-- <button mat-mini-fab *ngIf="files.length < 2">
+      <mat-icon>delete</mat-icon>
+    </button> -->
+    <mat-icon>
+      {{ file.file.name.endsWith('.zip') ? 'folder_zip' : 'text_snippet' }}
+    </mat-icon>&nbsp;{{ file.file.name.length > 25 ? (file.file.name | slice:0:25) + '...' + (file.file.name | slice:file.file.name.length - 3:file.file.name.length) : file.file.name }}
+  </span>
+</div>
+<div *ngIf="error">
+  <span color="error">{{ error }}</span>
+</div>
