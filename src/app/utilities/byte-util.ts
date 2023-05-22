@@ -25,4 +25,16 @@ export class ByteUtil {
     }
   }
 
+  /**
+   * For use with the types of hex strings you find in a .mra file.
+   */
+  static convertDelimitedHexStringToUint8Array(hexString: string, delimeter = ' '): Uint8Array {
+    const bytesAsStrings = hexString.split(delimeter);
+    const buffer = new Uint8Array(bytesAsStrings.length);
+    for (let i = 0; i < buffer.length; i++) {
+      buffer[i] = Number(`0x${bytesAsStrings[i]}`)
+    }
+    return buffer;
+  }
+
 };

@@ -1,12 +1,13 @@
 import { Component } from '@angular/core';
 import { MatIconRegistry } from '@angular/material/icon';
-import { DomSanitizer } from '@angular/platform-browser';
-import JSZip from 'jszip';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ROM_DEFINITIONS } from './constants/rom-definitions';
 import { FileHandle } from './directives/file-droppable/file-handle';
 import { Patch } from './models/mra';
 import { RomExecutableRegion, RomProgramSpace } from './models/rom-map';
-import { LogService } from './services/log.service';
+import { LogService } from './services/log/log.service';
+import { ByteUtil } from './utilities/byte-util';
+import { FileUtil } from './utilities/file-util';
 
 @Component({
   selector: 'app-root',
@@ -38,7 +39,7 @@ export class AppComponent {
   combinedDecryptedBinary = new Uint8Array();
   combinedDecryptedModifiedBinary = new Uint8Array();
   combinedEncryptedModifiedBinary = new Uint8Array();
-  downloadLink: any;
+  downloadLink: SafeUrl = '';
   dumps = false;
   error = '';
   files: FileHandle[] = [];
@@ -46,7 +47,7 @@ export class AppComponent {
   patches: Patch[] = [];
   zipFilename = '';
 
-  private eepromString = '';
+  private eeprom = new Uint8Array();
   private executableRomFiles: File[] = [];
   private romData: RomProgramSpace | undefined = undefined;
   private romFiles: File[] = [];
@@ -73,8 +74,8 @@ export class AppComponent {
 
   private fileTypesAreValid(): boolean {
     if (this.files.length === 2) {
-      const hasZip = this.files.some((fileHandle) => fileHandle.file.name.split('.').pop() === 'zip');
-      const hasMra = this.files.some((fileHandle) => fileHandle.file.name.split('.').pop() === 'mra');
+      const hasZip = this.files.some((fileHandle) => FileUtil.fileHandleHasExtension(fileHandle, 'zip'));
+      const hasMra = this.files.some((fileHandle) => FileUtil.fileHandleHasExtension(fileHandle, 'mra'));
       return hasZip && hasMra;
     }
     return false;
@@ -82,22 +83,30 @@ export class AppComponent {
 
   // please don't look at this
   private async processFiles(): Promise<void> {
-    const zipFile = this.files.find((fileHandle: FileHandle) => fileHandle.file.name.split('.').pop() === 'zip');
-    const mraFile = this.files.find((fileHandle: FileHandle) => fileHandle.file.name.split('.').pop() === 'mra');
+    const zipFile = this.files.find((fileHandle: FileHandle) => FileUtil.fileHandleHasExtension(fileHandle, 'zip'));
+    const mraFile = this.files.find((fileHandle: FileHandle) => FileUtil.fileHandleHasExtension(fileHandle, 'mra'));
     if (zipFile && mraFile) {
       this.zipFilename = zipFile.file.name;
-      this.romData = ROM_DEFINITIONS[zipFile.file.name.split('.')[0]];
+      this.romData = ROM_DEFINITIONS[FileUtil.getFileHandleName(zipFile)];
 
       if (this.romData) {
-        this.romFiles = await this.readZipFile(zipFile.file);
+        try {
+          this.romFiles = await FileUtil.readZipFile(zipFile.file);
+        } catch(error) {
+          this.log.error('Error reading ROM.');
+          this.error = 'Error reading ROM. Refresh and try again with a valid one.';
+          return;
+        }
         await this.processZipFile();
         await this.processMraFile(mraFile.file);
       } else {
+        this.log.error('Invalid ROM name');
         this.error = 'Invalid ROM. Please upload a MAME ROM with its original name and file extension (.zip).'
         return;
       }
     } else {
-      this.error = 'Please upload a MAME ROM with its original name and file extension (.zip) and a .mra file.';
+      this.log.error('Missing ' + zipFile ? '.mra' : '.zip' + ' file.')
+      this.error = 'Missing ' + zipFile ? '.mra' : '.zip' + ' file.';
       return;
     }
   }
@@ -116,7 +125,7 @@ export class AppComponent {
           this.executableRomFiles.push(this.romPartNameToRomFileMap.get(romPartName)!);
         }
       });
-      this.combinedEncryptedBinary = await this.concatenateFiles(this.executableRomFiles);
+      this.combinedEncryptedBinary = await FileUtil.concatenateFilesToUint8Array(this.executableRomFiles);
       this.isApplyingPatch = false;
       this.log.debug(`ROM size: 0x${this.combinedEncryptedBinary.length.toString(16)}`)
     } else {
@@ -126,90 +135,32 @@ export class AppComponent {
     }
   }
 
-  private async readZipFile(zipFile: File): Promise<File[]> {
-    const zip = new JSZip();
-
-    try {
-      const zipData = await this.readFile(zipFile);
-      const loadedZip = await zip.loadAsync(zipData);
-      const files: Promise<File>[] = [];
-
-      loadedZip.forEach((_: string, zipEntry: JSZip.JSZipObject) => {
-        if (!zipEntry.dir) {
-          const filePromise = zipEntry.async('uint8array').then((fileData: Uint8Array) => {
-            const blob = new Blob([fileData]);
-            return new File([blob], zipEntry.name);
-          });
-          files.push(filePromise);
-        }
-      });
-      return Promise.all(files);
-    } catch (error) {
-      this.log.error('Error reading .zip file:', error);
-      return [];
-    }
-  }
-
-  private async createZipFile(filesToZip: File[]): Promise<Blob> {
-    const zip = new JSZip();
-    const filePromises: Promise<void>[] = [];
-
-    if (this.eepromString) {
-      const eepromBytes: number[] = [];
-      this.eepromString.split(' ').forEach((byteAsString) => eepromBytes.push(Number('0x'+byteAsString)));
-      const buffer = new Uint8Array(eepromBytes);
-      zip.file('eeprom', buffer);
-    }
-
-    filesToZip.forEach(async (file) => {
-      const filePromise = this.readFile(file).then((fileData) => {
-        zip.file(file.name, fileData);
-      });
-      filePromises.push(filePromise);
-    });
-
-    await Promise.all(filePromises);
-
-    return zip.generateAsync({ type: 'blob' });
-  }
-
-  private async readFile(file: File): Promise<ArrayBuffer> {
-    return new Promise<ArrayBuffer>((resolve, reject) => {
-      const fileReader = new FileReader();
-      fileReader.onload = () => resolve(fileReader.result as ArrayBuffer);
-      fileReader.onerror = () => reject(fileReader.error);
-      fileReader.readAsArrayBuffer(file);
-    });
-  }
-
   private async processMraFile(mraFile: File): Promise<void> {
     const domParser = new DOMParser();
     try {
       const xmlDoc = (domParser.parseFromString(await mraFile.text(), 'text/xml') as XMLDocument);
       const nvramIndex = xmlDoc.querySelector('nvram')?.getAttribute('index');
+      let eepromString = '';
       if (nvramIndex !== null) {
         xmlDoc.querySelectorAll('rom').forEach((rom) => {
           if (rom.getAttribute('index') && rom.getAttribute('index') === nvramIndex) {
             rom.childNodes.forEach((child) => {
               if (child && child.nodeName === 'part') {
-                this.eepromString += child.textContent;
+                eepromString += child.textContent ?? '';
               }
             });
           }
-          if (this.eepromString) {
-            this.log.debug('eeprom modifications found:', this.eepromString);
-          }
         });
+        if (eepromString) {
+          this.log.debug('eeprom modifications found:', eepromString);
+          this.eeprom = ByteUtil.convertDelimitedHexStringToUint8Array(eepromString);
+        }
       }
       this.log.debug('patches:');
       xmlDoc.querySelectorAll('patch').forEach((patch) => {
         this.log.debug(`0x${(Number(patch.getAttribute('offset')) - 0x40).toString(16)}: ${patch.textContent}`);
         const offset = Number(patch.getAttribute('offset') ?? 0);
-        const patchBytes = patch.textContent?.split(' ');
-        const bytes = new Uint8Array(patchBytes?.length ?? 0);
-        for (let i = 0; i < (patchBytes?.length ?? 0); i++) {
-          bytes[i] = Number('0x'+patchBytes![i]);
-        }
+        const bytes = ByteUtil.convertDelimitedHexStringToUint8Array(patch.textContent ?? '');
         this.patches.push({ offset: offset, bytes: bytes });
       });
     } catch (error) {
@@ -226,14 +177,12 @@ export class AppComponent {
         const range = fileToRangeMap.find((range) => range.start <= this.patches[i].offset && this.patches[i].offset <= range.end)!;
         const fileRelativeOffset = offset - range.start;
         let file = this.romPartNameToRomFileMap.get(range.filename);
-        // let fileData = ByteUtil.swapBytePairs(new Uint8Array(await file!.arrayBuffer()));
         let fileData = new Uint8Array(await file!.arrayBuffer());
 
         for (let j = 0; j < this.patches[i].bytes.length; j++) {
-          this.log.debug(`patching ${file!.name}@0x${fileRelativeOffset+j} (ROM+0x${this.patches[i].offset}) from ${fileData[fileRelativeOffset+j].toString(16)} to ${this.patches[i].bytes[j].toString(16)}`);
+          this.log.debug(`patching ${file!.name} @ 0x${(fileRelativeOffset + j).toString(16).padStart(6, '0')} (ROM + 0x${(this.patches[i].offset + j).toString(16).padStart(6, '0')}) from ${fileData[fileRelativeOffset+j].toString(16).padStart(2, '0')} to ${this.patches[i].bytes[j].toString(16).padStart(2, '0')}`);
           fileData[fileRelativeOffset + j] = this.patches[i].bytes[j];
         }
-        // fileData = ByteUtil.swapBytePairs(fileData);
         this.romPartNameToRomFileMap.set(range.filename, new File([new Blob([fileData])], range.filename));
       }
       this.executableRomFiles = [];
@@ -249,9 +198,12 @@ export class AppComponent {
         });
       }
 
-      this.combinedEncryptedModifiedBinary = await this.concatenateFiles(this.executableRomFiles);
+      this.combinedEncryptedModifiedBinary = await FileUtil.concatenateFilesToUint8Array(this.executableRomFiles);
 
-      const zipFile = await this.createZipFile(this.romFiles);
+      if (this.eeprom.length) {
+        this.romFiles.push(FileUtil.createFileFromUint8Array(this.eeprom, 'eeprom'));
+      }
+      const zipFile = await FileUtil.createZipFile(this.romFiles);
 
       this.downloadLink = this.sanitizer.bypassSecurityTrustUrl(window.URL.createObjectURL(zipFile));
       this.isApplyingPatch = false;
@@ -270,21 +222,6 @@ export class AppComponent {
       }
     }
     return fileToRangeMapping;
-  }
-
-  private async concatenateFiles(files: File[]): Promise<Uint8Array> {
-    let len = 0;
-    for (const file of files) {
-      len += file.size;
-    }
-    const result = new Uint8Array(len);
-    let offset = 0;
-    for (const file of files) {
-      const fileBuffer = await file.arrayBuffer();
-      result.set(new Uint8Array(fileBuffer), offset);
-      offset += file.size;
-    }
-    return Promise.resolve(result);
   }
 
 }
