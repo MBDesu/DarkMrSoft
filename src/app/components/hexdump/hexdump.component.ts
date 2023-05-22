@@ -38,8 +38,11 @@ export class HexdumpComponent implements OnInit {
 
   onOffsetChange(event: Event): void {
     const el = event.target as HTMLInputElement;
-    const value = el.value;
-    const index = this.hexdumpRows.findIndex((row) => row.offset.toLowerCase().endsWith(value.toLowerCase()));
+    const value = Number(`0x${el.value}`);
+    const index = this.hexdumpRows.findIndex((row) => {
+      const rowOffset = Number(`0x${row.offset}`);
+      return rowOffset <= value && value < rowOffset + this.bytesPerLine;
+    });
     if (index > -1) {
       this.viewport.scrollToIndex(index);
     }
@@ -52,6 +55,9 @@ export class HexdumpComponent implements OnInit {
     this.hexdump();
   }
 
+  trackHex(_: number, entry: HexDumpEntry): string {
+    return entry.offset;
+  }
 
   private hexdump(binary: Uint8Array = this.workingBinary, bytesPerLine: number = this.bytesPerLine, startingOffset: number = this.startingOffset): void {
     const array = new Uint8Array(binary);

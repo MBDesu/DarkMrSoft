@@ -2,7 +2,7 @@
   <div class="toolbar-item">
     <mat-form-field subscriptSizing="dynamic">
       <mat-label>Jump to offset</mat-label>
-      <input matInput placeholder="8e00" (keyup)="onOffsetChange($event)" />
+      <input matInput type="text" placeholder="8e0c" (keyup)="onOffsetChange($event)" />
     </mat-form-field>
   </div>
   <div class="toolbar-item">
@@ -20,5 +20,5 @@
   </div>
 </div>
 <cdk-virtual-scroll-viewport itemSize="17" minBufferPx="200" maxBufferPx="400" class="viewport">
-  <code *cdkVirtualFor="let row of hexdumpRows">{{ row.offset }} {{ row.hex }} {{ row.ascii }}<br /></code>
+  <code *cdkVirtualFor="let row of hexdumpRows; trackBy: trackHex">{{ row.offset }} {{ row.hex }} {{ row.ascii }}<br /></code>
 </cdk-virtual-scroll-viewport>
