@@ -7,7 +7,7 @@ import { FileHandle } from './file-handle';
 })
 export class FileDroppableDirective {
   @Output() files: EventEmitter<FileHandle[]> = new EventEmitter();
-  @Output() error: EventEmitter<string> = new EventEmitter();
+  @Output() didError: EventEmitter<string> = new EventEmitter();
   private validFileExtensions = [ '.zip', '.mra' ];
 
   constructor(private sanitizer: DomSanitizer) {}
@@ -34,7 +34,7 @@ export class FileDroppableDirective {
       for (let i = 0; i < event.dataTransfer.files.length; i++) {
         const file = event.dataTransfer.files[i];
         if (!this.isValidFileExtension(file.name)) {
-          this.error.emit('Please choose a .zip or .mra file')
+          this.didError.emit('Please choose a .zip or .mra file')
           return;
         }
         const url = this.sanitizer.bypassSecurityTrustUrl(window.URL.createObjectURL(file));

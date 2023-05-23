@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { LogLevel } from '../../models/log-level';
@@ -11,7 +12,7 @@ export class LogEntry {
   logWithDate = true;
 
   buildLogString(): string {
-    let ret: string = '';
+    let ret = '';
 
     if (this.logWithDate) {
       ret = new Date() + ' - ';
@@ -32,7 +33,7 @@ export class LogEntry {
     if (params.some(p => typeof p == 'object')) {
       ret = '';
 
-      for (let item of params) {
+      for (const item of params) {
         ret += JSON.stringify(item) + ',';
       }
     }
@@ -75,7 +76,7 @@ export class LogService {
 
   private writeToLog(msg: string, level: LogLevel, params: any[]) {
     if (this.shouldLog(level)) {
-      let entry = new LogEntry();
+      const entry = new LogEntry();
       entry.message = msg;
       entry.level = level;
       entry.extraInfo = params;

@@ -1,16 +1,16 @@
 import { Component } from '@angular/core';
 import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
-import { ROM_DEFINITIONS } from './constants/rom-definitions';
 import { FileHandle } from './directives/file-droppable/file-handle';
 import { Patch } from './models/mra';
-import { RomExecutableRegion, RomProgramSpace } from './models/rom-map';
+import { RomMap } from './models/rom-map';
 import { LogService } from './services/log/log.service';
+import { RomService } from './services/rom/rom.service';
 import { ByteUtil } from './utilities/byte-util';
 import { FileUtil } from './utilities/file-util';
 
 @Component({
-  selector: 'app-root',
+  selector: 'cps2-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
@@ -23,10 +23,6 @@ export class AppComponent {
   // TODO: move the file processing stuff into its own services/helpers. It
   // doesn't do much here except really make things awful.
 
-  // TODO: simplify data structures to be more conducive to what we're actually
-  // doing here. Constructing all these maps and arrays and iterating over them
-  // a thousand times shouldn't be necessary.
-
   // TODO: verify that the ROM files' CRCs, SHA1s, etc. match what is in the
   // .mra file. Maybe display a warning if something doesn't match? Or error
   // out. I dunno.
@@ -36,8 +32,8 @@ export class AppComponent {
   title = 'Dark Mr. Soft - CPS2 ROM Patcher';
 
   combinedEncryptedBinary = new Uint8Array();
-  combinedDecryptedBinary = new Uint8Array();
-  combinedDecryptedModifiedBinary = new Uint8Array();
+  // combinedDecryptedBinary = new Uint8Array();
+  // combinedDecryptedModifiedBinary = new Uint8Array();
   combinedEncryptedModifiedBinary = new Uint8Array();
   downloadLink: SafeUrl = '';
   dumps = false;
@@ -49,24 +45,23 @@ export class AppComponent {
 
   private eeprom = new Uint8Array();
   private executableRomFiles: File[] = [];
-  private romData: RomProgramSpace | undefined = undefined;
+  private modifiedExecutableRomFiles: File[] = [];
+  private modifiedRomFiles: File[] = [];
   private romFiles: File[] = [];
-  private romPartNames: string[] = [];
-  private romPartNameToRomFileMap = new Map<string, File>();
-  private romPartNameToRomExecutableRegionmap = new Map<string, RomExecutableRegion>();
+  private romMap!: RomMap;
 
-  constructor(private matIconRegistry: MatIconRegistry, private sanitizer: DomSanitizer, private log: LogService) {
+  constructor(private matIconRegistry: MatIconRegistry, private sanitizer: DomSanitizer, private log: LogService, private romService: RomService) {
     this.matIconRegistry.addSvgIcon(
       'github',
       this.sanitizer.bypassSecurityTrustResourceUrl('../assets/github.svg')
     );
   }
 
-  onFileDrop(event: FileHandle[]): void {
+  async onFileDrop(event: FileHandle[]): Promise<void> {
     this.files = event;
     if (this.fileTypesAreValid()) {
       this.error = '';
-      this.processFiles();
+      await this.processFiles();
     } else {
       // ??????????????????????
     }
@@ -81,29 +76,34 @@ export class AppComponent {
     return false;
   }
 
-  // please don't look at this
   private async processFiles(): Promise<void> {
-    const zipFile = this.files.find((fileHandle: FileHandle) => FileUtil.fileHandleHasExtension(fileHandle, 'zip'));
-    const mraFile = this.files.find((fileHandle: FileHandle) => FileUtil.fileHandleHasExtension(fileHandle, 'mra'));
+    const zipFile = this.files.find((fileHandle) => FileUtil.fileHandleHasExtension(fileHandle, 'zip'));
+    const mraFile = this.files.find((fileHandle) => FileUtil.fileHandleHasExtension(fileHandle, 'mra'));
+
     if (zipFile && mraFile) {
       this.zipFilename = zipFile.file.name;
-      this.romData = ROM_DEFINITIONS[FileUtil.getFileHandleName(zipFile)];
 
-      if (this.romData) {
-        try {
-          this.romFiles = await FileUtil.readZipFile(zipFile.file);
-        } catch(error) {
-          this.log.error('Error reading ROM.');
-          this.error = 'Error reading ROM. Refresh and try again with a valid one.';
-          return;
-        }
-        await this.processZipFile();
-        await this.processMraFile(mraFile.file);
-      } else {
-        this.log.error('Invalid ROM name');
-        this.error = 'Invalid ROM. Please upload a MAME ROM with its original name and file extension (.zip).'
+      try {
+        this.romFiles = await FileUtil.readZipFile(zipFile.file);
+      } catch(error) {
+        this.log.error('Error reading ROM zip file.');
+        this.error = 'Error reading ROM zip file. Refresh and try again with a valid one.';
         return;
       }
+
+      try {
+        this.romMap = this.romService.mapRom(FileUtil.getFileName(zipFile.file), this.romFiles);
+      } catch(error) {
+        if (error instanceof Error) {
+          this.log.error(error.message);
+          this.error = error.message;
+          return;
+        }
+      }
+
+      this.executableRomFiles = this.processRomParts(this.romMap);
+      this.combinedEncryptedBinary = await FileUtil.concatenateFilesToUint8Array(this.executableRomFiles);
+      await this.processMraFile(mraFile.file);
     } else {
       this.log.error('Missing ' + zipFile ? '.mra' : '.zip' + ' file.')
       this.error = 'Missing ' + zipFile ? '.mra' : '.zip' + ' file.';
@@ -111,30 +111,17 @@ export class AppComponent {
     }
   }
 
-  // especially don't look at this
-  // FIXME: see the fixme at the top of this file
-  private async processZipFile(): Promise<void> {
-    this.isApplyingPatch = true;
-    this.romPartNames = this.romData!.executableRegions.map((romPart) => romPart.filename);
-    
-    if (this.romPartNames.every((romPartName) => this.romFiles.some((file) => file.name === romPartName))) {
-      this.romPartNames.forEach((romPartName) => {
-        this.romPartNameToRomFileMap.set(romPartName, this.romFiles.find((romFile) => romFile.name === romPartName)!);
-        this.romPartNameToRomExecutableRegionmap.set(romPartName, this.romData!.executableRegions.find((region) => region.filename === romPartName)!);
-        if (this.romPartNameToRomExecutableRegionmap.get(romPartName)) {
-          this.executableRomFiles.push(this.romPartNameToRomFileMap.get(romPartName)!);
-        }
-      });
-      this.combinedEncryptedBinary = await FileUtil.concatenateFilesToUint8Array(this.executableRomFiles);
-      this.isApplyingPatch = false;
-      this.log.debug(`ROM size: 0x${this.combinedEncryptedBinary.length.toString(16)}`)
-    } else {
-      this.isApplyingPatch = false;
-      this.error = 'ROM is missing files. Please upload a MAME ROM with its original name and file extension (.zip).'
-      return;
+  // can't remember if ES2015+ respects insertion order or not and cba to look
+  // atm, so we're assuring that these are ordered with an order property
+  private processRomParts(romMap: RomMap): File[] {
+    const orderedRomFiles = new Array<File>(Object.keys(romMap.parts).length);
+    for (const part of Object.values(romMap.parts)) {
+      orderedRomFiles[part.order] = part.file;
     }
+    return orderedRomFiles;
   }
 
+  // TODO: move this
   private async processMraFile(mraFile: File): Promise<void> {
     const domParser = new DOMParser();
     try {
@@ -159,7 +146,7 @@ export class AppComponent {
       this.log.debug('patches:');
       xmlDoc.querySelectorAll('patch').forEach((patch) => {
         this.log.debug(`0x${(Number(patch.getAttribute('offset')) - 0x40).toString(16)}: ${patch.textContent}`);
-        const offset = Number(patch.getAttribute('offset') ?? 0);
+        const offset = Number(patch.getAttribute('offset')) - 0x40;
         const bytes = ByteUtil.convertDelimitedHexStringToUint8Array(patch.textContent ?? '');
         this.patches.push({ offset: offset, bytes: bytes });
       });
@@ -170,58 +157,20 @@ export class AppComponent {
 
   async applyPatch(): Promise<void> {
     this.isApplyingPatch = true;
-    if (this.romData && this.patches.length && this.romPartNames.length) {
-      const fileToRangeMap = this.constructFileToRangeMapping();
-      for (let i = 0; i < this.patches.length; i++) {
-        const offset = this.patches[i].offset - 0x40;
-        const range = fileToRangeMap.find((range) => range.start <= this.patches[i].offset && this.patches[i].offset <= range.end)!;
-        const fileRelativeOffset = offset - range.start;
-        let file = this.romPartNameToRomFileMap.get(range.filename);
-        let fileData = new Uint8Array(await file!.arrayBuffer());
+    const modifiedRomParts = await this.romService.applyPatch(this.romMap, this.patches);
+    // perhaps the data structure refactor was a little short sighted...
+    const unmodifiedRomParts = this.romFiles.filter((file) => !modifiedRomParts.some((modifiedFile) => file.name === modifiedFile.name));
+    this.modifiedRomFiles = modifiedRomParts.concat(unmodifiedRomParts);
+    this.combinedEncryptedModifiedBinary = await FileUtil.concatenateFilesToUint8Array(modifiedRomParts);
 
-        for (let j = 0; j < this.patches[i].bytes.length; j++) {
-          this.log.debug(`patching ${file!.name} @ 0x${(fileRelativeOffset + j).toString(16).padStart(6, '0')} (ROM + 0x${(this.patches[i].offset + j).toString(16).padStart(6, '0')}) from ${fileData[fileRelativeOffset+j].toString(16).padStart(2, '0')} to ${this.patches[i].bytes[j].toString(16).padStart(2, '0')}`);
-          fileData[fileRelativeOffset + j] = this.patches[i].bytes[j];
-        }
-        this.romPartNameToRomFileMap.set(range.filename, new File([new Blob([fileData])], range.filename));
-      }
-      this.executableRomFiles = [];
-
-      for (const romPart of this.romPartNames) {
-        this.executableRomFiles.push(this.romPartNameToRomFileMap.get(romPart)!);
-      }
-      for (let i = 0; i < this.romFiles.length; i++) {
-        this.executableRomFiles.find((file) => {
-          if (file.name === this.romFiles[i].name) {
-            this.romFiles[i] = file;
-          }
-        });
-      }
-
-      this.combinedEncryptedModifiedBinary = await FileUtil.concatenateFilesToUint8Array(this.executableRomFiles);
-
-      if (this.eeprom.length) {
-        this.romFiles.push(FileUtil.createFileFromUint8Array(this.eeprom, 'eeprom'));
-      }
-      const zipFile = await FileUtil.createZipFile(this.romFiles);
-
-      this.downloadLink = this.sanitizer.bypassSecurityTrustUrl(window.URL.createObjectURL(zipFile));
-      this.isApplyingPatch = false;
-      return Promise.resolve();
-    } else {
-      this.isApplyingPatch = false;
-      return Promise.resolve();
+    if (this.eeprom.length) {
+      this.modifiedRomFiles.push(FileUtil.createFileFromUint8Array(this.eeprom, 'eeprom'));
     }
-  }
 
-  private constructFileToRangeMapping(): { filename: string, start: number, end: number }[] {
-    const fileToRangeMapping: { filename: string, start: number, end: number }[] = [];
-    if (this.romData) {
-      for (const region of this.romData.executableRegions) {
-        fileToRangeMapping.push({ filename: region.filename, start: region.offset, end: region.offset + region.size });
-      }
-    }
-    return fileToRangeMapping;
+    const zipFile = await FileUtil.createZipFile(this.modifiedRomFiles);
+    this.downloadLink = this.sanitizer.bypassSecurityTrustUrl(window.URL.createObjectURL(zipFile));
+    this.isApplyingPatch = false;
+    return Promise.resolve();
   }
 
 }

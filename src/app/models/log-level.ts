@@ -6,4 +6,4 @@ export enum LogLevel {
   Error = 4,
   Fatal = 5,
   Off = 6
-};
+}

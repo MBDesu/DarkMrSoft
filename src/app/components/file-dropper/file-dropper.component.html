@@ -1,4 +1,4 @@
-<div class="drop-box" cps2FileDroppable *ngIf="!files.length || files.length < 2" (files)="filesDropped($event)" (error)="gotError($event)">
+<div class="drop-box" cps2FileDroppable *ngIf="!files.length || files.length < 2" (files)="filesDropped($event)" (didError)="gotError($event)">
   <span>
     <button mat-mini-fab class="upload-button" (click)="fileUpload.click()">
       <mat-icon>file_upload</mat-icon>

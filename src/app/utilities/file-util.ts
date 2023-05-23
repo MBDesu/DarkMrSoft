@@ -74,24 +74,19 @@ export class FileUtil {
   static async readZipFile(zipFile: File): Promise<File[]> {
     const zip = new JSZip();
 
-    try {
-      const zipData = await this.readFile(zipFile);
-      const loadedZip = await zip.loadAsync(zipData);
-      const files: Promise<File>[] = [];
+    const zipData = await this.readFile(zipFile);
+    const loadedZip = await zip.loadAsync(zipData);
+    const files: Promise<File>[] = [];
 
-      loadedZip.forEach((_: string, zipEntry: JSZip.JSZipObject) => {
-        if (!zipEntry.dir) {
-          const filePromise = zipEntry.async('uint8array').then((fileData: Uint8Array) => {
-            return this.createFileFromUint8Array(fileData, zipEntry.name);
-          });
-          files.push(filePromise);
-        }
-      });
-      return Promise.all(files);
-    } catch (error) {
-      // don't enjoy catching to throw, but I don't wanna do DI in a util class
-      throw error;
-    }
+    loadedZip.forEach((_: string, zipEntry: JSZip.JSZipObject) => {
+      if (!zipEntry.dir) {
+        const filePromise = zipEntry.async('uint8array').then((fileData: Uint8Array) => {
+          return this.createFileFromUint8Array(fileData, zipEntry.name);
+        });
+        files.push(filePromise);
+      }
+    });
+    return Promise.all(files);
   }
 
 }

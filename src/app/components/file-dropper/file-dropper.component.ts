@@ -8,7 +8,7 @@ import { FileHandle } from 'src/app/directives/file-droppable/file-handle';
   styleUrls: ['./file-dropper.component.scss']
 })
 export class FileDropperComponent {
-  @Output() onFileDrop: EventEmitter<FileHandle[]> = new EventEmitter();
+  @Output() fileDropped: EventEmitter<FileHandle[]> = new EventEmitter();
   files: FileHandle[] = [];
   error = '';
 
@@ -20,7 +20,7 @@ export class FileDropperComponent {
     } else {
       this.files = event;
     }
-    this.onFileDrop.emit(this.files);
+    this.fileDropped.emit(this.files);
     this.error = '';
   }
 

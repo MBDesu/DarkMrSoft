@@ -27,7 +27,7 @@
       you have the latest firmware that supports key writing.</p>
     </div>
     <br />
-    <cps2-file-dropper (onFileDrop)="onFileDrop($event)"></cps2-file-dropper><br />
+    <cps2-file-dropper (fileDropped)="onFileDrop($event)"></cps2-file-dropper><br />
     <div *ngIf="error">{{ error }}</div>
     <mat-slide-toggle *ngIf="combinedEncryptedBinary.length" [(ngModel)]="dumps">Display hex dumps</mat-slide-toggle><br />
     <br />
@@ -43,20 +43,20 @@
       </mat-expansion-panel-header>
       <cps2-hexdump [binary]="combinedEncryptedBinary"></cps2-hexdump>
     </mat-expansion-panel>
-    <mat-expansion-panel *ngIf="combinedDecryptedBinary.length && dumps" class="hex-panel">
+    <!-- <mat-expansion-panel *ngIf="combinedDecryptedBinary.length && dumps" class="hex-panel">
       <mat-expansion-panel-header>
         <mat-panel-title>ROM dump</mat-panel-title>
         <mat-panel-description>Unmodified, decrypted</mat-panel-description>
       </mat-expansion-panel-header>
       <cps2-hexdump [binary]="combinedDecryptedBinary"></cps2-hexdump>
-    </mat-expansion-panel>
-    <mat-expansion-panel *ngIf="combinedDecryptedModifiedBinary.length && dumps" class="hex-panel">
+    </mat-expansion-panel> -->
+    <!-- <mat-expansion-panel *ngIf="combinedDecryptedModifiedBinary.length && dumps" class="hex-panel">
       <mat-expansion-panel-header>
         <mat-panel-title>ROM dump</mat-panel-title>
         <mat-panel-description>Modified, decrypted</mat-panel-description>
       </mat-expansion-panel-header>
       <cps2-hexdump [binary]="combinedDecryptedModifiedBinary"></cps2-hexdump>
-    </mat-expansion-panel>
+    </mat-expansion-panel> -->
     <mat-expansion-panel *ngIf="combinedEncryptedModifiedBinary.length && dumps" class="hex-panel">
       <mat-expansion-panel-header>
         <mat-panel-title>ROM dump</mat-panel-title>

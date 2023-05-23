@@ -19,6 +19,7 @@ import { AppComponent } from './app.component';
 import { FileDropperComponent } from './components/file-dropper/file-dropper.component';
 import { HexdumpComponent } from './components/hexdump/hexdump.component';
 import { FileDroppableDirective } from './directives/file-droppable/file-droppable.directive';
+import { LogService } from './services/log/log.service';
 
 @NgModule({
   declarations: [
@@ -44,7 +45,7 @@ import { FileDroppableDirective } from './directives/file-droppable/file-droppab
     MatToolbarModule,
     ScrollingModule,
   ],
-  providers: [],
+  providers: [LogService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

@@ -474,20 +474,20 @@ export class Cps2Crypto {
   }
 
   cps2Crypt(dir: Cps2Crypto.Direction): Uint8Array {
-    let key1 = new Uint32Array(4);
-    let dec = new Uint16Array(this.rom.length);
-    let sboxes11 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
-    let sboxes12 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
-    let sboxes13 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
-    let sboxes14 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
-    let sboxes21 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
-    let sboxes22 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
-    let sboxes23 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
-    let sboxes24 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
-    let rom = this.rom;
-    let length = rom.length;
-    let masterKey = this.masterKey;
-    let upperLimit = this.upperLimit;
+    const key1 = new Uint32Array(4);
+    const dec = new Uint16Array(this.rom.length);
+    const sboxes11 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
+    const sboxes12 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
+    const sboxes13 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
+    const sboxes14 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
+    const sboxes21 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
+    const sboxes22 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
+    const sboxes23 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
+    const sboxes24 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
+    const rom = this.rom;
+    const length = rom.length;
+    const masterKey = this.masterKey;
+    const upperLimit = this.upperLimit;
     this.optimizeSBoxes(sboxes11, this.fn1_r1_boxes);
     this.optimizeSBoxes(sboxes12, this.fn1_r2_boxes);
     this.optimizeSBoxes(sboxes13, this.fn1_r3_boxes);
@@ -521,10 +521,10 @@ export class Cps2Crypto {
 
     for (let i = 0; i < 0x10000; i++) {
       let a;
-      let subkey = new Uint32Array(2);
-      let key2 = new Uint32Array(4);
+      const subkey = new Uint32Array(2);
+      const key2 = new Uint32Array(4);
 
-      let seed = this.feistel(i, this.fn1_groupA, this.fn1_groupB, sboxes11, sboxes12, sboxes13, sboxes14, key1[0], key1[1], key1[2], key1[3]);
+      const seed = this.feistel(i, this.fn1_groupA, this.fn1_groupB, sboxes11, sboxes12, sboxes13, sboxes14, key1[0], key1[1], key1[2], key1[3]);
       console.log('seed', '0x' + seed.toString(16));
       this.expandSubkey(subkey, seed);
 
@@ -603,8 +603,9 @@ export class Cps2Crypto {
     console.log('masterkey 2', '0x' + this.masterKey[1].toString(16));
   }
 
-};
+}
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Cps2Crypto {
   export enum Direction {
     Encrypt = 0,
