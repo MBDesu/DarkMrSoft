@@ -20,9 +20,6 @@ export class AppComponent {
   // a nightmare. Need to be able to do so without much trouble in case the user
   // decides they want to do more than one thing or they make a mistake.
 
-  // TODO: move the file processing stuff into its own services/helpers. It
-  // doesn't do much here except really make things awful.
-
   // TODO: verify that the ROM files' CRCs, SHA1s, etc. match what is in the
   // .mra file. Maybe display a warning if something doesn't match? Or error
   // out. I dunno.
@@ -45,7 +42,6 @@ export class AppComponent {
 
   private eeprom = new Uint8Array();
   private executableRomFiles: File[] = [];
-  private modifiedExecutableRomFiles: File[] = [];
   private modifiedRomFiles: File[] = [];
   private romFiles: File[] = [];
   private romMap!: RomMap;
