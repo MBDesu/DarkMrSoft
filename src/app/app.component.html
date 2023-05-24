@@ -14,22 +14,22 @@
       <p>4. Download the ROM and enjoy</p>
       <p>If you find bugs, please open an issue in the repository linked in the
       top right of this page.</p>
-      <p><strong>Note:</strong> if you use a patched ROM with MAME, you must
+      <p><strong>MAME users:</strong> if you use a patched ROM with MAME, you must
       load it from the command line. The CRC of the files will not match what
       MAME has and it will not load your ROM from the UI.</p>
+      <p><strong>Darksoft users:</strong> if you use a patched ROM with Darksoft, ensure
+      you have the latest firmware that supports key writing. Use <a
+      href="https://www.arcade-projects.com/threads/cps2-multi-romset-generator.9425/" class="mat-accent">this</a>
+      tool to convert the ROM to a format suitable for Darksoft. Pay attention
+      to <a
+      href="https://www.arcade-projects.com/threads/cps2-multi-romset-generator.9425/page-2#post-288604">this</a>
+      post as well.</p>
       <p><strong>Note:</strong> if this produces an <code>eeprom</code> file
       inside of the resulting <code>.zip</code>, it means the <code>.mra</code>
       file sets nvram (the test menu config). If you are on MAME, just extract
       this file in <code>&lt;mame installation&gt;/nvram/&lt;rom
       name&gt;/</code>. If you are on Darksoft, you will have to figure out what
       options are being set and set them manually.</p>
-      <p><strong>Note:</strong> if you use a patched ROM with Darksoft, ensure
-      you have the latest firmware that supports key writing. Use <a
-      href="https://www.arcade-projects.com/threads/cps2-multi-romset-generator.9425/">this</a>
-      tool to convert the ROM to a format suitable for Darksoft. Pay attention
-      to <a
-      href="https://www.arcade-projects.com/threads/cps2-multi-romset-generator.9425/page-2#post-288604">this</a>
-      post as well.</p>
     </div>
     <br />
     <cps2-file-dropper (fileDropped)="onFileDrop($event)"></cps2-file-dropper><br />
