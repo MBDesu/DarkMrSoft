@@ -29,7 +29,7 @@ export class AppComponent {
   title = 'Dark Mr. Soft - CPS2 ROM Patcher';
 
   combinedEncryptedBinary = new Uint8Array();
-  // combinedDecryptedBinary = new Uint8Array();
+  combinedDecryptedBinary = new Uint8Array();
   // combinedDecryptedModifiedBinary = new Uint8Array();
   combinedEncryptedModifiedBinary = new Uint8Array();
   downloadLink: SafeUrl = '';
@@ -99,6 +99,8 @@ export class AppComponent {
 
       this.executableRomFiles = this.processRomParts(this.romMap);
       this.combinedEncryptedBinary = await FileUtil.concatenateFilesToUint8Array(this.executableRomFiles);
+      // const crypter = new Cps2Crypto(this.combinedEncryptedBinary, new Uint8Array(await FileUtil.readFile(this.romMap.key)));
+      // this.combinedDecryptedBinary = crypter.cps2Crypt();
       await this.processMraFile(mraFile.file);
     } else {
       this.log.error('Missing ' + zipFile ? '.mra' : '.zip' + ' file.')

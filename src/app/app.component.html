@@ -24,7 +24,12 @@
       name&gt;/</code>. If you are on Darksoft, you will have to figure out what
       options are being set and set them manually.</p>
       <p><strong>Note:</strong> if you use a patched ROM with Darksoft, ensure
-      you have the latest firmware that supports key writing.</p>
+      you have the latest firmware that supports key writing. Use <a
+      href="https://www.arcade-projects.com/threads/cps2-multi-romset-generator.9425/">this</a>
+      tool to convert the ROM to a format suitable for Darksoft. Pay attention
+      to <a
+      href="https://www.arcade-projects.com/threads/cps2-multi-romset-generator.9425/page-2#post-288604">this</a>
+      post as well.</p>
     </div>
     <br />
     <cps2-file-dropper (fileDropped)="onFileDrop($event)"></cps2-file-dropper><br />
@@ -43,13 +48,13 @@
       </mat-expansion-panel-header>
       <cps2-hexdump [binary]="combinedEncryptedBinary"></cps2-hexdump>
     </mat-expansion-panel>
-    <!-- <mat-expansion-panel *ngIf="combinedDecryptedBinary.length && dumps" class="hex-panel">
+    <mat-expansion-panel *ngIf="combinedDecryptedBinary.length && dumps" class="hex-panel">
       <mat-expansion-panel-header>
         <mat-panel-title>ROM dump</mat-panel-title>
         <mat-panel-description>Unmodified, decrypted</mat-panel-description>
       </mat-expansion-panel-header>
       <cps2-hexdump [binary]="combinedDecryptedBinary"></cps2-hexdump>
-    </mat-expansion-panel> -->
+    </mat-expansion-panel>
     <!-- <mat-expansion-panel *ngIf="combinedDecryptedModifiedBinary.length && dumps" class="hex-panel">
       <mat-expansion-panel-header>
         <mat-panel-title>ROM dump</mat-panel-title>
