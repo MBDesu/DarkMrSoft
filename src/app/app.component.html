@@ -32,42 +32,49 @@
       options are being set and set them manually.</p>
     </div>
     <br />
-    <cps2-file-dropper (fileDropped)="onFileDrop($event)"></cps2-file-dropper><br />
+    <cps2-file-dropper [config]="fileDropperConfig" (filesAdded)="filesAdded($event)" *ngIf="!files.length"></cps2-file-dropper><br />
     <div *ngIf="error">{{ error }}</div>
     <mat-slide-toggle *ngIf="combinedEncryptedBinary.length" [(ngModel)]="dumps">Display hex dumps</mat-slide-toggle><br />
     <br />
-    <button mat-raised-button *ngIf="combinedEncryptedBinary.length && !isApplyingPatch" color="primary" (click)="applyPatch()">Apply Patch</button>&nbsp;
-    <button mat-raised-button *ngIf="downloadLink" color="primary" (click)="download.click()">Download Patched ROM</button>&nbsp;
-    <a [href]="downloadLink" [hidden]="true" [download]="zipFilename" #download></a>
-    <mat-spinner *ngIf="isApplyingPatch"></mat-spinner>
-    <br /><br />
-    <mat-expansion-panel *ngIf="combinedEncryptedBinary.length && dumps" class="hex-panel">
-      <mat-expansion-panel-header>
-        <mat-panel-title>ROM dump</mat-panel-title>
-        <mat-panel-description>Unmodified, encrypted</mat-panel-description>
-      </mat-expansion-panel-header>
-      <cps2-hexdump [binary]="combinedEncryptedBinary"></cps2-hexdump>
-    </mat-expansion-panel>
-    <mat-expansion-panel *ngIf="combinedDecryptedBinary.length && dumps" class="hex-panel">
-      <mat-expansion-panel-header>
-        <mat-panel-title>ROM dump</mat-panel-title>
-        <mat-panel-description>Unmodified, decrypted</mat-panel-description>
-      </mat-expansion-panel-header>
-      <cps2-hexdump [binary]="combinedDecryptedBinary"></cps2-hexdump>
-    </mat-expansion-panel>
-    <!-- <mat-expansion-panel *ngIf="combinedDecryptedModifiedBinary.length && dumps" class="hex-panel">
-      <mat-expansion-panel-header>
-        <mat-panel-title>ROM dump</mat-panel-title>
-        <mat-panel-description>Modified, decrypted</mat-panel-description>
-      </mat-expansion-panel-header>
-      <cps2-hexdump [binary]="combinedDecryptedModifiedBinary"></cps2-hexdump>
-    </mat-expansion-panel> -->
-    <mat-expansion-panel *ngIf="combinedEncryptedModifiedBinary.length && dumps" class="hex-panel">
-      <mat-expansion-panel-header>
-        <mat-panel-title>ROM dump</mat-panel-title>
-        <mat-panel-description>Modified, encrypted</mat-panel-description>
-      </mat-expansion-panel-header>
-        <cps2-hexdump [binary]="combinedEncryptedModifiedBinary"></cps2-hexdump>
-    </mat-expansion-panel>
+    <ng-container *ngIf="filesUploaded">
+      <!-- <label for="output">Output format</label>
+      <mat-radio-group class="output-radio-group" name="output" [(ngModel)]="outputFormat">
+        <mat-radio-button class="output-radio-button" value="mame">MAME</mat-radio-button>
+        <mat-radio-button class="output-radio-button" value="darksoft">Darksoft</mat-radio-button>
+      </mat-radio-group> -->
+      <button mat-raised-button *ngIf="combinedEncryptedBinary.length && !isApplyingPatch && !appliedPatch" color="primary" (click)="applyPatch()">Apply Patch</button>&nbsp;
+      <button mat-raised-button *ngIf="downloadLink" color="primary" (click)="download.click()">Download Patched ROM</button>&nbsp;
+      <a [href]="downloadLink" [hidden]="true" [download]="zipFilename" #download></a>
+      <mat-spinner *ngIf="isApplyingPatch"></mat-spinner>
+      <br /><br />
+      <mat-expansion-panel *ngIf="combinedEncryptedBinary.length && dumps" class="hex-panel">
+        <mat-expansion-panel-header>
+          <mat-panel-title>ROM dump</mat-panel-title>
+          <mat-panel-description>Unmodified, encrypted</mat-panel-description>
+        </mat-expansion-panel-header>
+        <cps2-hexdump [binary]="combinedEncryptedBinary"></cps2-hexdump>
+      </mat-expansion-panel>
+      <mat-expansion-panel *ngIf="combinedDecryptedBinary.length && dumps" class="hex-panel">
+        <mat-expansion-panel-header>
+          <mat-panel-title>ROM dump</mat-panel-title>
+          <mat-panel-description>Unmodified, decrypted</mat-panel-description>
+        </mat-expansion-panel-header>
+        <cps2-hexdump [binary]="combinedDecryptedBinary"></cps2-hexdump>
+      </mat-expansion-panel>
+      <!-- <mat-expansion-panel *ngIf="combinedDecryptedModifiedBinary.length && dumps" class="hex-panel">
+        <mat-expansion-panel-header>
+          <mat-panel-title>ROM dump</mat-panel-title>
+          <mat-panel-description>Modified, decrypted</mat-panel-description>
+        </mat-expansion-panel-header>
+        <cps2-hexdump [binary]="combinedDecryptedModifiedBinary"></cps2-hexdump>
+      </mat-expansion-panel> -->
+      <mat-expansion-panel *ngIf="combinedEncryptedModifiedBinary.length && dumps" class="hex-panel">
+        <mat-expansion-panel-header>
+          <mat-panel-title>ROM dump</mat-panel-title>
+          <mat-panel-description>Modified, encrypted</mat-panel-description>
+        </mat-expansion-panel-header>
+          <cps2-hexdump [binary]="combinedEncryptedModifiedBinary"></cps2-hexdump>
+      </mat-expansion-panel>
+    </ng-container>
   </mat-sidenav-content>
 </mat-sidenav-container>

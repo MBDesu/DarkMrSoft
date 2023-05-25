@@ -29,3 +29,14 @@ p {
   min-width: 700px;
   margin-right: 3em;
 }
+
+.output-radio-group {
+  display: flex;
+  flex-direction: column;
+  margin: 10px 0;
+  align-items: flex-start;
+}
+
+.output-radio {
+  margin: 5px;
+}

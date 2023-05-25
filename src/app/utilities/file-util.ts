@@ -1,13 +1,6 @@
-import { FileHandle } from '../directives/file-droppable/file-handle';
 import JSZip from 'jszip';
 
 export class FileUtil {
-
-  static getFileHandleName(fileHandle: FileHandle, withExtension = false): string {
-    if (withExtension) return fileHandle.file.name;
-    const fullFilenameDotDelimited = fileHandle.file.name.split('.');
-    return fullFilenameDotDelimited.slice(0, fullFilenameDotDelimited.length - 1).join('');
-  }
 
   static getFileName(file: File, withExtension = false): string {
     if (withExtension) return file.name;
@@ -15,16 +8,16 @@ export class FileUtil {
     return fullFilenameDotDelimited.slice(0, fullFilenameDotDelimited.length - 1).join('');
   }
 
-  static getFileHandleExtension(fileHandle: FileHandle): string {
-    return fileHandle.file.name.split('.').pop()?.toLowerCase() || '';
-  }
-
   /**
    * To be passed as a predicate.
    * @param fileHandle 
    */
-  static fileHandleHasExtension(fileHandle: FileHandle, extension: string): boolean {
-    return this.getFileHandleExtension(fileHandle) === extension.toLowerCase();
+  static fileHasExtension(file: File, extension: string): boolean {
+    return this.getFileExtension(file) === extension.toLowerCase();
+  }
+
+  static getFileExtension(file: File): string {
+    return file.name.split('.').pop()?.toLowerCase() || '';
   }
 
   static async concatenateFilesToUint8Array(files: File[]): Promise<Uint8Array> {

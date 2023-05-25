@@ -6,6 +6,7 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatRadioModule } from '@angular/material/radio';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -18,13 +19,11 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AppComponent } from './app.component';
 import { FileDropperComponent } from './components/file-dropper/file-dropper.component';
 import { HexdumpComponent } from './components/hexdump/hexdump.component';
-import { FileDroppableDirective } from './directives/file-droppable/file-droppable.directive';
 import { LogService } from './services/log/log.service';
 
 @NgModule({
   declarations: [
     AppComponent,
-    FileDroppableDirective,
     FileDropperComponent,
     HexdumpComponent
   ],
@@ -40,6 +39,7 @@ import { LogService } from './services/log/log.service';
     MatIconModule,
     MatInputModule,
     MatProgressSpinnerModule,
+    MatRadioModule,
     MatSidenavModule,
     MatSlideToggleModule,
     MatToolbarModule,

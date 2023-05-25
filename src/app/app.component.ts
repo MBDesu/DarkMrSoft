@@ -1,13 +1,13 @@
 import { Component } from '@angular/core';
 import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
-import { FileHandle } from './directives/file-droppable/file-handle';
 import { Patch } from './models/mra';
 import { RomMap } from './models/rom-map';
 import { LogService } from './services/log/log.service';
 import { RomService } from './services/rom/rom.service';
 import { ByteUtil } from './utilities/byte-util';
 import { FileUtil } from './utilities/file-util';
+import { FileDroppableConfig } from './components/file-dropper/file-dropper-config';
 
 @Component({
   selector: 'cps2-root',
@@ -16,18 +16,19 @@ import { FileUtil } from './utilities/file-util';
 })
 export class AppComponent {
 
-  // TODO: refactor file dropper stuff. Deleting files from the app component is
-  // a nightmare. Need to be able to do so without much trouble in case the user
-  // decides they want to do more than one thing or they make a mistake.
-
   // TODO: verify that the ROM files' CRCs, SHA1s, etc. match what is in the
   // .mra file. Maybe display a warning if something doesn't match? Or error
   // out. I dunno.
 
-  // FIXME: this whole thing is just full of filthy code.
+  // TODO: add .mra to .ips (or vice versa) conversion
+
+  // TODO: add Darksoft file format generation
+
+  // TODO: consider some refactoring to get rid of some of these state variables
 
   title = 'Dark Mr. Soft - CPS2 ROM Patcher';
-
+  
+  appliedPatch = false;
   combinedEncryptedBinary = new Uint8Array();
   combinedDecryptedBinary = new Uint8Array();
   // combinedDecryptedModifiedBinary = new Uint8Array();
@@ -35,8 +36,18 @@ export class AppComponent {
   downloadLink: SafeUrl = '';
   dumps = false;
   error = '';
-  files: FileHandle[] = [];
+  files: File[] = [];
+
+  fileDropperConfig: FileDroppableConfig = {
+    allowedFileExtensions: [ 'mra', 'zip' ],
+    maxFiles: 2,
+    minFiles: 2,
+    uniqueExtensions: true,
+  };
+
+  filesUploaded = false;
   isApplyingPatch = false;
+  // outputFormat: 'mame' | 'darksoft' = 'mame';
   patches: Patch[] = [];
   zipFilename = '';
 
@@ -53,34 +64,20 @@ export class AppComponent {
     );
   }
 
-  async onFileDrop(event: FileHandle[]): Promise<void> {
+  async filesAdded(event: File[]): Promise<void> {
     this.files = event;
-    if (this.fileTypesAreValid()) {
-      this.error = '';
-      await this.processFiles();
-    } else {
-      // ??????????????????????
-    }
-  }
-
-  private fileTypesAreValid(): boolean {
-    if (this.files.length === 2) {
-      const hasZip = this.files.some((fileHandle) => FileUtil.fileHandleHasExtension(fileHandle, 'zip'));
-      const hasMra = this.files.some((fileHandle) => FileUtil.fileHandleHasExtension(fileHandle, 'mra'));
-      return hasZip && hasMra;
-    }
-    return false;
+    await this.processFiles();
   }
 
   private async processFiles(): Promise<void> {
-    const zipFile = this.files.find((fileHandle) => FileUtil.fileHandleHasExtension(fileHandle, 'zip'));
-    const mraFile = this.files.find((fileHandle) => FileUtil.fileHandleHasExtension(fileHandle, 'mra'));
+    const zipFile = this.files.find((file) => FileUtil.fileHasExtension(file, 'zip'));
+    const mraFile = this.files.find((file) => FileUtil.fileHasExtension(file, 'mra'));
 
     if (zipFile && mraFile) {
-      this.zipFilename = zipFile.file.name;
+      this.zipFilename = zipFile.name;
 
       try {
-        this.romFiles = await FileUtil.readZipFile(zipFile.file);
+        this.romFiles = await FileUtil.readZipFile(zipFile);
       } catch(error) {
         this.log.error('Error reading ROM zip file.');
         this.error = 'Error reading ROM zip file. Refresh and try again with a valid one.';
@@ -88,7 +85,7 @@ export class AppComponent {
       }
 
       try {
-        this.romMap = this.romService.mapRom(FileUtil.getFileName(zipFile.file), this.romFiles);
+        this.romMap = this.romService.mapRom(FileUtil.getFileName(zipFile), this.romFiles);
       } catch(error) {
         if (error instanceof Error) {
           this.log.error(error.message);
@@ -98,10 +95,11 @@ export class AppComponent {
       }
 
       this.executableRomFiles = this.processRomParts(this.romMap);
+      this.filesUploaded = true;
       this.combinedEncryptedBinary = await FileUtil.concatenateFilesToUint8Array(this.executableRomFiles);
       // const crypter = new Cps2Crypto(this.combinedEncryptedBinary, new Uint8Array(await FileUtil.readFile(this.romMap.key)));
       // this.combinedDecryptedBinary = crypter.cps2Crypt();
-      await this.processMraFile(mraFile.file);
+      await this.processMraFile(mraFile);
     } else {
       this.log.error('Missing ' + zipFile ? '.mra' : '.zip' + ' file.')
       this.error = 'Missing ' + zipFile ? '.mra' : '.zip' + ' file.';
@@ -168,6 +166,7 @@ export class AppComponent {
     const zipFile = await FileUtil.createZipFile(this.modifiedRomFiles);
     this.downloadLink = this.sanitizer.bypassSecurityTrustUrl(window.URL.createObjectURL(zipFile));
     this.isApplyingPatch = false;
+    this.appliedPatch = true;
     return Promise.resolve();
   }
 
