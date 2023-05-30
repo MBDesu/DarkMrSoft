@@ -32,6 +32,7 @@
       options are being set and set them manually.</p>
     </div>
     <br />
+    <cps2-wizard [fileDropperConfig]="fileDropperConfig"></cps2-wizard>
     <cps2-file-dropper [config]="fileDropperConfig" (filesAdded)="filesAdded($event)" *ngIf="!files.length"></cps2-file-dropper><br />
     <div *ngIf="error">{{ error }}</div>
     <mat-slide-toggle *ngIf="combinedEncryptedBinary.length" [(ngModel)]="dumps">Display hex dumps</mat-slide-toggle><br />

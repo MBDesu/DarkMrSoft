@@ -1,20 +1,40 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
+import { AbstractControl, ControlValueAccessor, NG_VALIDATORS, NG_VALUE_ACCESSOR, ValidationErrors } from '@angular/forms';
 import { FileDroppableConfig } from 'src/app/components/file-dropper/file-dropper-config';
 import { FileUtil } from 'src/app/utilities/file-util';
 
 @Component({
   selector: 'cps2-file-dropper',
   templateUrl: './file-dropper.component.html',
-  styleUrls: ['./file-dropper.component.scss']
+  styleUrls: ['./file-dropper.component.scss'],
+  providers: [
+    {
+      provide: NG_VALUE_ACCESSOR,
+      multi: true,
+      useExisting: FileDropperComponent,
+    },
+    {
+      provide: NG_VALIDATORS,
+      multi: true,
+      useExisting: FileDropperComponent,
+    },
+  ]
 })
-export class FileDropperComponent implements OnInit {
+export class FileDropperComponent implements OnInit, ControlValueAccessor {
   @Input() config!: FileDroppableConfig;
   @Output() filesAdded = new EventEmitter<File[]>();
+
+  isDisabled = false;
   error = '';
   files: File[] = [];
   filesReady = false;
   fileTypesEncountered: string[] = [];
+  onChange!: (_: any) => void;
+  onTouched!: any;
+  touched = false;
 
+  // lifecycle hooks
   ngOnInit(): void {
     if (!this.config) {
       this.config = {
@@ -23,6 +43,33 @@ export class FileDropperComponent implements OnInit {
     }
   }
 
+  // ControlValueAccessor implementation
+  registerOnChange(fn: (_: any) => void): void {
+    this.onChange = fn;
+  }
+
+  registerOnTouched(fn: any): void {
+    this.onTouched = fn;
+  }
+
+  setDisabledState?(isDisabled: boolean): void {
+    this.isDisabled = isDisabled;
+  }
+
+  writeValue(files: File[]): void {
+    this.files = files;
+  }
+
+  // validation
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  validate(_: AbstractControl): ValidationErrors | null {
+    return this.error ? {
+      error: this.error
+    } : null;
+  }
+
+
+  // events
   @HostListener('dragover', ['$event'])
   onDragOver(event: DragEvent): void {
     event.preventDefault();
@@ -39,8 +86,7 @@ export class FileDropperComponent implements OnInit {
   onDrop(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
-
-    if (event.dataTransfer) {
+    if (!this.isDisabled && event.dataTransfer) {
       for (let i = 0; i < event.dataTransfer.files.length; i++) {
         if (!this.addFile(event.dataTransfer.files[i])) {
           break;
@@ -50,13 +96,14 @@ export class FileDropperComponent implements OnInit {
   }
 
   filesPicked(event: Event): void {
-    const el = event.currentTarget as HTMLInputElement;
-    const fileList = el.files;
+    if (!this.isDisabled) {
+      const el = event.currentTarget as HTMLInputElement;
+      const fileList = el.files;
 
-    if (fileList) {
-      for (let i = 0; i < fileList.length; i++) {
-        console.log(fileList[i].name);
-        if (!this.addFile(fileList[i])) break;
+      if (fileList) {
+        for (let i = 0; i < fileList.length; i++) {
+          if (!this.addFile(fileList[i])) break;
+        }
       }
     }
   }
@@ -75,7 +122,6 @@ export class FileDropperComponent implements OnInit {
   }
 
   private addFile(file: File): boolean {
-    console.log(this.filesReady);
     this.error = '';
     if (!this.areFilesReady()) {
       if (this.fileExtensionIsValid(file)) {
