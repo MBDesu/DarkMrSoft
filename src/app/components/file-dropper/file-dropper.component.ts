@@ -28,6 +28,7 @@ export class FileDropperComponent implements OnInit, ControlValueAccessor {
   isDisabled = false;
   error = '';
   files: File[] = [];
+  filesCommitted = false;
   filesReady = false;
   fileTypesEncountered: string[] = [];
   onChange!: (_: any) => void;
@@ -56,16 +57,28 @@ export class FileDropperComponent implements OnInit, ControlValueAccessor {
     this.isDisabled = isDisabled;
   }
 
-  writeValue(files: File[]): void {
-    this.files = files;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  writeValue(_: any): void {
+    return;
   }
 
   // validation
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   validate(_: AbstractControl): ValidationErrors | null {
-    return this.error ? {
-      error: this.error
-    } : null;
+    const errors: { error: string; }[] = [];
+    if (this.error) {
+      errors.push({ error: this.error });
+    }
+    if (this.config.maxFiles && this.files.length > this.config.maxFiles) {
+      errors.push({ error: 'Somehow you have too many files.' });
+    }
+    if (this.config.minFiles && this.files.length < this.config.minFiles) {
+      errors.push({ error: `Need $(this.config.minFiles - this.files.length) more files.` });
+    }
+    if (!this.filesCommitted) {
+      errors.push({ error: 'Click the upload files button.'} );
+    }
+    return errors.length ? errors : null;
   }
 
 
@@ -118,6 +131,7 @@ export class FileDropperComponent implements OnInit, ControlValueAccessor {
   }
 
   commitFiles(): void {
+    this.filesCommitted = true;
     this.filesAdded.emit(this.files);
   }
 
@@ -127,6 +141,7 @@ export class FileDropperComponent implements OnInit, ControlValueAccessor {
       if (this.fileExtensionIsValid(file)) {
         this.fileTypesEncountered.push(FileUtil.getFileExtension(file));
         this.files.push(file);
+        this.onChange(file);
         this.areFilesReady();
         return true;
       }

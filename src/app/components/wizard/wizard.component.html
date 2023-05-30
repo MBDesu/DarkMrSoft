@@ -1,12 +1,29 @@
-<mat-stepper orientation="vertical">
-  <mat-step [stepControl]="fileDropperForm">
-    <form [formGroup]="fileDropperForm">
-      <ng-template matStepLabel>Upload files</ng-template>
-      <mat-label>Upload files</mat-label>
-      <cps2-file-dropper formControlName="fileDropper" [config]="fileDropperConfig"></cps2-file-dropper>
+<mat-stepper orientation="vertical" linear>
+  <mat-step [stepControl]="operationForm" [editable]="false">
+    <form [formGroup]="operationForm">
+      <ng-template matStepLabel>Select operation</ng-template>
+      <mat-label>What would you like to do?</mat-label>
+      <mat-radio-group class="radio-group" formControlName="operation">
+        <mat-radio-button value="to_mame">Patch MAME <mat-icon>arrow_right_alt</mat-icon> MAME with <code>.mra</code></mat-radio-button>
+        <mat-radio-button value="to_darksoft">Patch MAME <mat-icon>arrow_right_alt</mat-icon> Darksoft with <code>.mra</code></mat-radio-button>
+        <mat-radio-button value="ips_to_mra">Convert <code>.ips</code> <mat-icon>arrow_right_alt</mat-icon> <code>.mra</code></mat-radio-button>
+        <mat-radio-button value="mra_to_ips">Convert <code>.mra</code> <mat-icon>arrow_right_alt</mat-icon> <code>.ips</code></mat-radio-button>
+      </mat-radio-group>
+      <div>
+        <button mat-button matStepperNext>Next</button>
+      </div>
     </form>
   </mat-step>
-  <mat-step>
+  <mat-step [stepControl]="fileDropperForm" [editable]="false">
+    <form [formGroup]="fileDropperForm">
+      <ng-template matStepLabel>Upload files</ng-template>
+      <cps2-file-dropper formControlName="fileDropper" [config]="fileDropperConfig"></cps2-file-dropper>
+    </form>
+    <div>
+      <button mat-button matStepperNext>Next</button>
+    </div>
+  </mat-step>
+  <mat-step [editable]="false">
     <ng-template matStepLabel></ng-template>
   </mat-step>
 </mat-stepper>

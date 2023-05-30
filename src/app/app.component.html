@@ -7,11 +7,6 @@
 <mat-sidenav-container>
   <mat-sidenav-content class="app-content">
     <div>
-      <p>1. Upload a MAME ROM with its original filename and extension
-      (<code>.zip</code>).</p>
-      <p>2. Upload a <code>.mra</code> file.</p>
-      <p>3. Click Apply Patch.</p>
-      <p>4. Download the ROM and enjoy</p>
       <p>If you find bugs, please open an issue in the repository linked in the
       top right of this page.</p>
       <p><strong>MAME users:</strong> if you use a patched ROM with MAME, you must
@@ -32,17 +27,12 @@
       options are being set and set them manually.</p>
     </div>
     <br />
-    <cps2-wizard [fileDropperConfig]="fileDropperConfig"></cps2-wizard>
+    <cps2-wizard></cps2-wizard>
     <cps2-file-dropper [config]="fileDropperConfig" (filesAdded)="filesAdded($event)" *ngIf="!files.length"></cps2-file-dropper><br />
     <div *ngIf="error">{{ error }}</div>
     <mat-slide-toggle *ngIf="combinedEncryptedBinary.length" [(ngModel)]="dumps">Display hex dumps</mat-slide-toggle><br />
     <br />
     <ng-container *ngIf="filesUploaded">
-      <!-- <label for="output">Output format</label>
-      <mat-radio-group class="output-radio-group" name="output" [(ngModel)]="outputFormat">
-        <mat-radio-button class="output-radio-button" value="mame">MAME</mat-radio-button>
-        <mat-radio-button class="output-radio-button" value="darksoft">Darksoft</mat-radio-button>
-      </mat-radio-group> -->
       <button mat-raised-button *ngIf="combinedEncryptedBinary.length && !isApplyingPatch && !appliedPatch" color="primary" (click)="applyPatch()">Apply Patch</button>&nbsp;
       <button mat-raised-button *ngIf="downloadLink" color="primary" (click)="download.click()">Download Patched ROM</button>&nbsp;
       <a [href]="downloadLink" [hidden]="true" [download]="zipFilename" #download></a>

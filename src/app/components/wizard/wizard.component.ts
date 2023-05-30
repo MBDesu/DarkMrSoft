@@ -9,8 +9,38 @@ import { FileDroppableConfig } from '../file-dropper/file-dropper-config';
 })
 export class WizardComponent {
 
-  @Input({ required: true }) fileDropperConfig!: FileDroppableConfig;
+  dropperConfigs: { [key: string]: FileDroppableConfig } = {
+    'to_mame': {
+      minFiles: 2,
+      maxFiles: 2,
+      allowedFileExtensions: [ 'mra', 'zip' ],
+      uniqueExtensions: true,
+    },
+    'to_darksoft': {
+      minFiles: 2,
+      maxFiles: 2,
+      allowedFileExtensions: [ 'mra', 'zip' ],
+      uniqueExtensions: true,
+    },
+    'ips_to_mra': {
+      minFiles: 2,
+      maxFiles: 2,
+      allowedFileExtensions: [ 'mra', 'ips' ],
+      uniqueExtensions: true,
+    },
+    'mra_to_ips': {
+      minFiles: 2,
+      maxFiles: 2,
+      allowedFileExtensions: [ 'mra', 'ips' ],
+      uniqueExtensions: true,
+    }
+  };
 
+  fileDropperConfig!: FileDroppableConfig;
+
+  operationForm = this.fb.group({
+    operation: ['', Validators.required]
+  });
   fileDropperForm = this.fb.group({
     fileDropper: ['', Validators.required]
   });
