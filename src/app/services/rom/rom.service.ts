@@ -58,7 +58,7 @@ export class RomService {
     return romMap;
   }
 
-  async applyPatch(romMap: RomMap, patches: Patch[]): Promise<File[]> {
+  async applyMraPatch(romMap: RomMap, patches: Patch[]): Promise<File[]> {
     if (!patches.length) {
       throw new Error(`.mra file contains no patches.`);
     }
