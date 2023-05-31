@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { AbstractControl, ControlValueAccessor, NG_VALIDATORS, NG_VALUE_ACCESSOR, ValidationErrors } from '@angular/forms';
+import { Observable, Subscription } from 'rxjs';
 import { FileDroppableConfig } from 'src/app/components/file-dropper/file-dropper-config';
 import { FileUtil } from 'src/app/utilities/file-util';
 
@@ -21,12 +22,14 @@ import { FileUtil } from 'src/app/utilities/file-util';
     },
   ]
 })
-export class FileDropperComponent implements OnInit, ControlValueAccessor {
+export class FileDropperComponent implements OnDestroy, OnInit, ControlValueAccessor {
   @Input() config!: FileDroppableConfig;
+  @Input() externalError!: Observable<string>;
   @Output() filesAdded = new EventEmitter<File[]>();
 
   isDisabled = false;
   error = '';
+  externalErrorSubscription!: Subscription;
   files: File[] = [];
   filesCommitted = false;
   filesReady = false;
@@ -37,11 +40,25 @@ export class FileDropperComponent implements OnInit, ControlValueAccessor {
 
   // lifecycle hooks
   ngOnInit(): void {
+    if (this.externalError) {
+      this.externalErrorSubscription = this.externalError.subscribe((error) => {
+        if (error) {
+          this.filesCommitted = false;
+          this.filesReady = false;
+          this.onChange(this.files);
+        }
+        this.error = error;
+      });
+    }
     if (!this.config) {
       this.config = {
         allowedFileExtensions: []
       };
     }
+  }
+
+  ngOnDestroy(): void {
+    this.externalErrorSubscription?.unsubscribe();
   }
 
   // ControlValueAccessor implementation
@@ -58,7 +75,10 @@ export class FileDropperComponent implements OnInit, ControlValueAccessor {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  writeValue(_: any): void {
+  writeValue(value: any): void {
+    if (value === null) {
+      this.reset();
+    }
     return;
   }
 
@@ -73,14 +93,22 @@ export class FileDropperComponent implements OnInit, ControlValueAccessor {
       errors.push({ error: 'Somehow you have too many files.' });
     }
     if (this.config.minFiles && this.files.length < this.config.minFiles) {
-      errors.push({ error: `Need $(this.config.minFiles - this.files.length) more files.` });
+      errors.push({ error: `Need ${(this.config.minFiles - this.files.length)} more files.` });
     }
-    if (!this.filesCommitted) {
+    if (!this.filesCommitted && errors.length === 0) {
       errors.push({ error: 'Click the upload files button.'} );
     }
     return errors.length ? errors : null;
   }
 
+  reset(): void {
+    this.error = '';
+    this.files = [];
+    this.filesAdded.emit(this.files);
+    this.filesCommitted = false;
+    this.filesReady = false;
+    this.fileTypesEncountered = [];
+  }
 
   // events
   @HostListener('dragover', ['$event'])
@@ -127,12 +155,15 @@ export class FileDropperComponent implements OnInit, ControlValueAccessor {
     if (this.config.uniqueExtensions) {
       this.fileTypesEncountered.splice(this.fileTypesEncountered.indexOf(FileUtil.getFileExtension(deletedFile[0]), 1));
     }
+    this.onChange(this.files);
     this.areFilesReady();
   }
 
   commitFiles(): void {
     this.filesCommitted = true;
     this.filesAdded.emit(this.files);
+    this.onChange(this.files);
+    this.onTouched();
   }
 
   private addFile(file: File): boolean {
@@ -141,7 +172,7 @@ export class FileDropperComponent implements OnInit, ControlValueAccessor {
       if (this.fileExtensionIsValid(file)) {
         this.fileTypesEncountered.push(FileUtil.getFileExtension(file));
         this.files.push(file);
-        this.onChange(file);
+        this.onChange(this.files);
         this.areFilesReady();
         return true;
       }

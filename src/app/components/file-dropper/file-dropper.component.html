@@ -14,7 +14,7 @@
 <br />
 <div *ngFor="let file of files; let i = index">
   <span *ngIf="file">
-    <button mat-mini-fab (click)="fileDeleted(i)">
+    <button mat-mini-fab [disabled]="filesCommitted" (click)="fileDeleted(i)">
       <mat-icon>delete</mat-icon>
     </button>
     <mat-icon>
@@ -24,6 +24,10 @@
 </div>
 <br />
 <div *ngIf="filesReady">
-  <button mat-raised-button color="primary" (click)="commitFiles()">Upload Files</button>
+  <button mat-raised-button color="primary" [disabled]="filesCommitted" (click)="commitFiles()">Upload Files</button>
+  <div *ngIf="filesCommitted">
+    <br />
+    Files uploaded.
+  </div>
 </div>
 <br />
