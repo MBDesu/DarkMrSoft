@@ -1,4 +1,4 @@
-import { Patch } from "../models/mra";
+import { Patch } from '../models/mra';
 
 export class ByteUtil {
    

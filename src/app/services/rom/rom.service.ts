@@ -67,7 +67,7 @@ export class RomService {
    * @param patches 
    */
    mapMraPatchToFiles(romMap: RomMap, patches: Patch[]): PatchMap {
-    if (!patches.length){
+    if (!patches.length) {
       throw new Error('.mra file contains no patches.');
     }
     const patchMap: { [filename: string]: Patch[] } = {};
