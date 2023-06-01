@@ -1,3 +1,5 @@
+import { Patch } from "../models/mra";
+
 export class ByteUtil {
    
   static swapBytePairs(array: Uint8Array): Uint8Array {
@@ -7,6 +9,31 @@ export class ByteUtil {
       swappedArray[i + 1] = array[i];
     }
     return swappedArray;
+  }
+
+  static calculateIpsBufferSize(patches: Patch[]): number {
+    const prefixLength = 5;
+    const offsetsAndLengths = 5 * patches.length;
+    const postfixLength = 3;
+    let totalSize = prefixLength + offsetsAndLengths + postfixLength;
+    patches.forEach((patch) => totalSize += patch.bytes.length);
+    return totalSize;
+  }
+
+  static convertNumberToUint8Array(n: number, padToLength = 0, padValue = 0): Uint8Array {
+    if (!n) return new Uint8Array(0);
+    const arr = [];
+    arr.unshift(n & 255);
+    while (n >= 256) {
+      n = n >>> 8;
+      arr.unshift(n & 255);
+    }
+    if (padToLength) {
+      while (arr.length < padToLength) {
+        arr.unshift(padValue);
+      }
+    }
+    return new Uint8Array(arr);
   }
 
   static getMachineEndianness(): string {

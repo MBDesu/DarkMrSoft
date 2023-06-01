@@ -7,7 +7,7 @@
         <mat-radio-button value="to_mame">Patch MAME <mat-icon>arrow_right_alt</mat-icon> MAME with <code>.mra</code></mat-radio-button>
         <!-- <mat-radio-button value="to_darksoft">Patch MAME <mat-icon>arrow_right_alt</mat-icon> Darksoft with <code>.mra</code></mat-radio-button> -->
         <!-- <mat-radio-button value="ips_to_mra">Convert <code>.ips</code> <mat-icon>arrow_right_alt</mat-icon> <code>.mra</code></mat-radio-button> -->
-        <!-- <mat-radio-button value="mra_to_ips">Convert <code>.mra</code> <mat-icon>arrow_right_alt</mat-icon> <code>.ips</code></mat-radio-button> -->
+        <mat-radio-button value="mra_to_ips">Convert <code>.mra</code> <mat-icon>arrow_right_alt</mat-icon> <code>.ips</code></mat-radio-button>
       </mat-radio-group>
       <div>
         <button mat-button matStepperNext [disabled]="!operationForm.valid">Next</button>
@@ -17,6 +17,9 @@
   <mat-step [stepControl]="fileDropperForm" [editable]="false">
     <form [formGroup]="fileDropperForm">
       <ng-template matStepLabel>Upload files</ng-template>
+      <div>
+        <p>{{ helpText[(operationForm.get('operation')!.value ?? 'to_mame')] }}</p>
+      </div>
       <mat-spinner *ngIf="processing"></mat-spinner>
       <cps2-file-dropper
         [hidden]="processing"
@@ -34,7 +37,7 @@
   <mat-step [editable]="false">
     <ng-template matStepLabel>Do operation</ng-template>
     <mat-spinner *ngIf="processing"></mat-spinner>
-    <button mat-raised-button color="primary" *ngIf="operationButtonText && !processing" (click)="performOperation()">{{ operationButtonText }}</button>&nbsp;
+    <button mat-raised-button color="primary" *ngIf="operationButtonText && !processing" (click)="performOperation()">{{ operationButtonText[(operationForm.get('operation')!.value ?? 'to_mame')] }}</button>&nbsp;
     <button mat-raised-button *ngIf="downloadLink" color="primary" (click)="download.click()">Download</button>
     <a [href]="downloadLink" [hidden]="true" [download]="outputFilename" #download></a>
     <br />

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ROM_DEFINITIONS } from 'src/app/constants/rom-definitions';
-import { Patch } from 'src/app/models/mra';
+import { Patch, PatchMap } from 'src/app/models/mra';
 import { RomMap } from 'src/app/models/rom-map';
 import { FileUtil } from 'src/app/utilities/file-util';
 import { LogService } from '../log/log.service';
@@ -58,9 +58,38 @@ export class RomService {
     return romMap;
   }
 
+  /**
+   * Maps .mra patches to file relative offsets and filenames
+   * 
+   * For use with converting .mra patches to .ips, but prob useful for other
+   * stuff too.
+   * @param romMap 
+   * @param patches 
+   */
+   mapMraPatchToFiles(romMap: RomMap, patches: Patch[]): PatchMap {
+    if (!patches.length){
+      throw new Error('.mra file contains no patches.');
+    }
+    const patchMap: { [filename: string]: Patch[] } = {};
+    for (let i = 0; i < patches.length; i++) {
+      const romPart = this.findExecutableRomPartByRomOffset(romMap, patches[i].offset);
+      const filename = romPart.file.name;
+      const fileRelativeOffset = patches[i].offset - romPart.start;
+      const patch = { offset: fileRelativeOffset, bytes: patches[i].bytes };
+
+      if (patchMap[filename]) {
+        patchMap[filename].push(patch);
+      } else {
+        patchMap[filename] = [ patch ];
+      }
+    }
+
+    return patchMap;
+  }
+
   async applyMraPatch(romMap: RomMap, patches: Patch[]): Promise<File[]> {
     if (!patches.length) {
-      throw new Error(`.mra file contains no patches.`);
+      throw new Error('.mra file contains no patches.');
     }
     const modifiedFiles: { [filename: string]: File } = {};
     for (let i = 0; i < patches.length; i++) {

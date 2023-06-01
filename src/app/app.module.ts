@@ -20,8 +20,9 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AppComponent } from './app.component';
 import { FileDropperComponent } from './components/file-dropper/file-dropper.component';
 import { HexdumpComponent } from './components/hexdump/hexdump.component';
-import { LogService } from './services/log/log.service';
 import { WizardComponent } from './components/wizard/wizard.component';
+import { LogService } from './services/log/log.service';
+import { RomService } from './services/rom/rom.service';
 
 @NgModule({
   declarations: [
@@ -50,7 +51,7 @@ import { WizardComponent } from './components/wizard/wizard.component';
     ReactiveFormsModule,
     ScrollingModule,
   ],
-  providers: [LogService],
+  providers: [LogService, RomService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

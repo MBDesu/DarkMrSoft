@@ -21,7 +21,8 @@ export class AppComponent {
 
   // TODO: add Darksoft file format generation
 
-  // TODO: consider some refactoring to get rid of some of these state variables
+  // TODO: re-regex the MAME ROM definitions so that we can patch non-executable
+  // regions (graphics, etc.)
 
   title = 'Dark Mr. Soft - CPS2 ROM Patcher';
   
