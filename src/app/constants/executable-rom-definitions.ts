@@ -1,6 +1,6 @@
 import { RomProgramSpace } from '../models/rom-map';
 
-export const ROM_DEFINITIONS: { [romname: string]: RomProgramSpace } = {
+export const EXECUTABLE_ROM_DEFINITIONS: { [romname: string]: RomProgramSpace } = {
   '1944': {
     totalSize: 0x400000,
      executableRegions: [

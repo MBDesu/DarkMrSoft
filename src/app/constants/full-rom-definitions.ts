@@ -1,6 +1,6 @@
-import { RomMapV2 } from '../models/rom-map';
+import { FullRomMap } from '../models/rom-map';
 
-export const ROM_DEFINITIONS_V2: { [romName: string]: RomMapV2 } = {
+export const FULL_ROM_DEFINITIONS: { [romName: string]: FullRomMap } = {
   '1944': {
     regions: {
       'maincpu': {

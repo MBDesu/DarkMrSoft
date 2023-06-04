@@ -12,16 +12,16 @@ export interface RomMap {
   key: File;
 }
 
-export interface RomMapV2 {
-  regions: { [regionName: string]: RomProgramSpaceV2 };
+export interface FullRomMap {
+  regions: { [regionName: string]: FullyMappedProgramSpace };
 }
 
-export interface RomProgramSpaceV2 {
+export interface FullyMappedProgramSpace {
   size: number;
-  files: { [fileName: string]: RomFileV2 };
+  files: { [fileName: string]: RomFile };
 }
 
-export interface RomFileV2 {
+export interface RomFile {
   offset: number;
   size: number;
   file?: File;

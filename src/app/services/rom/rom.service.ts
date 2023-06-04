@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { ROM_DEFINITIONS } from 'src/app/constants/rom-definitions';
-import { ROM_DEFINITIONS_V2 } from 'src/app/constants/rom-definitions-v2';
+import { EXECUTABLE_ROM_DEFINITIONS } from 'src/app/constants/executable-rom-definitions';
+import { FULL_ROM_DEFINITIONS } from 'src/app/constants/full-rom-definitions';
 import { Patch, PatchMap } from 'src/app/models/mra';
-import { RomMap, RomMapV2, RomProgramSpaceV2 } from 'src/app/models/rom-map';
+import { RomMap, FullRomMap, FullyMappedProgramSpace } from 'src/app/models/rom-map';
 import { ByteUtil } from 'src/app/utilities/byte-util';
 import { FileUtil } from 'src/app/utilities/file-util';
 import { LogService } from '../log/log.service';
@@ -20,7 +20,7 @@ export class RomService {
   // to the mapping, this is also an acceptable way.
 
   mapRom(romName: string, romFiles: File[]): RomMap {
-    const romProgramSpace = ROM_DEFINITIONS[romName];
+    const romProgramSpace = EXECUTABLE_ROM_DEFINITIONS[romName];
     if (!romProgramSpace) {
       throw new Error(`'${romName}' is not a valid ROM.`);
     }
@@ -60,8 +60,8 @@ export class RomService {
     return romMap;
   }
 
-  getFullRomMap(romName: string, romFiles: File[]): RomMapV2 {
-    const romMap = ROM_DEFINITIONS_V2[romName];
+  getFullRomMap(romName: string, romFiles: File[]): FullRomMap {
+    const romMap = FULL_ROM_DEFINITIONS[romName];
     if (!romMap) {
       throw new Error(`'${romName}' is not a valid ROM.`);
     }
@@ -72,7 +72,7 @@ export class RomService {
     return romMap;
   }
 
-  private populateFullRomMapFiles(romMap: RomMapV2, romFiles: File[]): string {
+  private populateFullRomMapFiles(romMap: FullRomMap, romFiles: File[]): string {
     const regions = Object.keys(romMap.regions);
     for (const region of regions) {
       const regionFilenames = Object.keys(romMap.regions[region].files);
@@ -114,7 +114,7 @@ export class RomService {
     return patchMap;
   }
 
-  async convertMameRomToDarksoft(romMap: RomMapV2): Promise<File[]> {
+  async convertMameRomToDarksoft(romMap: FullRomMap): Promise<File[]> {
     const files: File[] = [];
     for (const region in romMap.regions) {
       switch (region) {
@@ -151,7 +151,7 @@ export class RomService {
     return files;
   }
 
-  private async formatAudiocpuForDarksoft(audiocpuRegion: RomProgramSpaceV2): Promise<File> {
+  private async formatAudiocpuForDarksoft(audiocpuRegion: FullyMappedProgramSpace): Promise<File> {
     const audiocpuBytes = ByteUtil.getFFBytes(0x400000);
     const files = this.getRegionFiles(audiocpuRegion);
     let bytesOffset = 0;
@@ -164,7 +164,7 @@ export class RomService {
     return FileUtil.createFileFromUint8Array(audiocpuBytes, 'flash.01');
   }
 
-  private async formatMaincpuForDarksoft(maincpuRegion: RomProgramSpaceV2): Promise<File> {
+  private async formatMaincpuForDarksoft(maincpuRegion: FullyMappedProgramSpace): Promise<File> {
     const maincpuBytes = ByteUtil.getFFBytes(0x400000);
     const files = this.getRegionFiles(maincpuRegion);
     let bytesOffset = 0;
@@ -177,7 +177,7 @@ export class RomService {
     return FileUtil.createFileFromUint8Array(maincpuBytes, 'flash.02');
   }
 
-  private async formatQsoundForDarksoft(qsoundRegion: RomProgramSpaceV2): Promise<File[]> {
+  private async formatQsoundForDarksoft(qsoundRegion: FullyMappedProgramSpace): Promise<File[]> {
     const flashBytes = ByteUtil.getFFBytes(0x800000);
     const files = this.getRegionFiles(qsoundRegion);
     const combinedQsoundFiles = await FileUtil.concatenateFilesToUint8Array(files);
@@ -192,7 +192,7 @@ export class RomService {
   }
 
   // TODO: really need to test this thoroughly for correctness
-  private async formatGfxForDarksoft(gfxRegion: RomProgramSpaceV2): Promise<File[]> {
+  private async formatGfxForDarksoft(gfxRegion: FullyMappedProgramSpace): Promise<File[]> {
     const files = this.getRegionFiles(gfxRegion);
 
     const result: File[] = [];
@@ -235,7 +235,7 @@ export class RomService {
     return result;
   }
 
-  private async formatKeyForDarksoft(keyRegion: RomProgramSpaceV2): Promise<File> {
+  private async formatKeyForDarksoft(keyRegion: FullyMappedProgramSpace): Promise<File> {
     const keyFilename = Object.keys(keyRegion.files);
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const keyFile = keyRegion.files[keyFilename[0]].file!;
@@ -244,7 +244,7 @@ export class RomService {
   }
 
   // lexicographically sorts the files by name
-  private getRegionFiles(region: RomProgramSpaceV2): File[] {
+  private getRegionFiles(region: FullyMappedProgramSpace): File[] {
     const result: File[] = [];
     for (const file in region.files) {
       // we know file is set here because the rom service would throw an error

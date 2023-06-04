@@ -4,7 +4,7 @@ import { ProcessedPatchFiles } from 'src/app/models/rom';
 import { ByteUtil } from 'src/app/utilities/byte-util';
 import { FileUtil } from 'src/app/utilities/file-util';
 import { RomService } from '../rom/rom.service';
-import { RomMapV2 } from 'src/app/models/rom-map';
+import { FullRomMap } from 'src/app/models/rom-map';
 
 @Injectable({
   providedIn: 'root'
@@ -32,7 +32,7 @@ export class OperationsService {
   }
 
   // romMap must have its files filled out from the zip
-  async convertMameToDarksoft(romMap: RomMapV2): Promise<SafeUrl> {
+  async convertMameToDarksoft(romMap: FullRomMap): Promise<SafeUrl> {
     const convertedRomFiles = await this.romService.convertMameRomToDarksoft(romMap);
     const zipFile = await FileUtil.createZipFile(convertedRomFiles);
     return this.domSanitizer.bypassSecurityTrustUrl(window.URL.createObjectURL(zipFile));

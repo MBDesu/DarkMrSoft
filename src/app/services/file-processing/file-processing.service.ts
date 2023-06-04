@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Patch, ProcessedMraFile } from 'src/app/models/mra';
 import { ProcessedPatchFiles, ProcessedRomFiles } from 'src/app/models/rom';
-import { RomMap, RomMapV2 } from 'src/app/models/rom-map';
+import { RomMap, FullRomMap } from 'src/app/models/rom-map';
 import { ByteUtil } from 'src/app/utilities/byte-util';
 import { FileUtil } from 'src/app/utilities/file-util';
 import { LogService } from '../log/log.service';
@@ -39,7 +39,7 @@ export class FileProcessingService {
     };
   }
 
-  async processRomFilesForDarksoftConversion(zipFile: File): Promise<RomMapV2> {
+  async processRomFilesForDarksoftConversion(zipFile: File): Promise<FullRomMap> {
     const romFiles = await FileUtil.readZipFile(zipFile);
     const romName = FileUtil.getFileName(zipFile);
     return this.romService.getFullRomMap(romName, romFiles);

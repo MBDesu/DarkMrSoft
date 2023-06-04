@@ -3,7 +3,7 @@ import { FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/f
 import { SafeUrl } from '@angular/platform-browser';
 import { Subject } from 'rxjs';
 import { ProcessedPatchFiles } from 'src/app/models/rom';
-import { RomMapV2 } from 'src/app/models/rom-map';
+import { FullRomMap } from 'src/app/models/rom-map';
 import { FileProcessingService } from 'src/app/services/file-processing/file-processing.service';
 import { OperationsService } from 'src/app/services/operations/operations.service';
 import { FileUtil } from 'src/app/utilities/file-util';
@@ -66,7 +66,7 @@ export class WizardComponent {
   gotFileProcessingError = new Subject<string>();
   outputFilename = '';
   processedPatchFiles!: ProcessedPatchFiles;
-  processedRomMap!: RomMapV2;
+  processedRomMap!: FullRomMap;
   processing = false;
 
   operationForm = this.fb.group({

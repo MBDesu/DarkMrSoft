@@ -3,8 +3,8 @@ import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 import { MatSort, MatSortable, Sort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
-import { ROM_DEFINITIONS } from 'src/app/constants/rom-definitions';
-import { ROM_DEFINITIONS_V2 } from 'src/app/constants/rom-definitions-v2';
+import { EXECUTABLE_ROM_DEFINITIONS } from 'src/app/constants/executable-rom-definitions';
+import { FULL_ROM_DEFINITIONS } from 'src/app/constants/full-rom-definitions';
 
 type RomDefinition = { name: string, supportsPatching: string, supportsConvertingToDarksoft: string };
 
@@ -24,8 +24,8 @@ export class SupportedRomsModalComponent implements OnInit, AfterViewInit {
   constructor(public dialogRef: MatDialogRef<SupportedRomsModalComponent>) { }
 
   ngOnInit(): void {
-    const patchableRoms = Object.keys(ROM_DEFINITIONS);
-    const convertibleRoms = Object.keys(ROM_DEFINITIONS_V2);
+    const patchableRoms = Object.keys(EXECUTABLE_ROM_DEFINITIONS);
+    const convertibleRoms = Object.keys(FULL_ROM_DEFINITIONS);
     for (const romName of patchableRoms) {
       const isConvertible = convertibleRoms.indexOf(romName) > -1;
       this.romDefinitions.push({ name: romName, supportsPatching: '✅', supportsConvertingToDarksoft: isConvertible ? '✅' : '❌' });
