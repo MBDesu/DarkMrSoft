@@ -34,9 +34,7 @@ export class OperationsService {
   // romMap must have its files filled out from the zip
   async convertMameToDarksoft(romMap: RomMapV2): Promise<SafeUrl> {
     const convertedRomFiles = await this.romService.convertMameRomToDarksoft(romMap);
-    console.log(convertedRomFiles);
     const zipFile = await FileUtil.createZipFile(convertedRomFiles);
-    console.log(zipFile);
     return this.domSanitizer.bypassSecurityTrustUrl(window.URL.createObjectURL(zipFile));
   }
 
