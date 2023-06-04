@@ -20,6 +20,23 @@ export class ByteUtil {
     return totalSize;
   }
 
+  static getFFBytes(bytes: number): Uint8Array {
+    return new Uint8Array(bytes).fill(0xFF);
+  }
+
+  // not sure this is working properly
+  // static padUint8ArrayToLength(arr: Uint8Array, lengthInBytes: number, padWithByte = 0): Uint8Array {
+  //   if (arr.length >= lengthInBytes) return arr;
+  //   const result = new Uint8Array(lengthInBytes);
+  //   result.set(arr);
+  //   const diff = lengthInBytes - arr.length;
+  //   if (padWithByte >= 256) padWithByte = 0xff;
+  //   for (let i = diff; i < result.length; i++) {
+  //     result.set([padWithByte], i);
+  //   }
+  //   return result;
+  // }
+
   static convertNumberToUint8Array(n: number, padToLength = 0, padValue = 0): Uint8Array {
     if (!n) return new Uint8Array(0);
     const arr = [];

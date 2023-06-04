@@ -3,10 +3,11 @@ import { FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/f
 import { SafeUrl } from '@angular/platform-browser';
 import { Subject } from 'rxjs';
 import { ProcessedPatchFiles } from 'src/app/models/rom';
+import { RomMapV2 } from 'src/app/models/rom-map';
 import { FileProcessingService } from 'src/app/services/file-processing/file-processing.service';
+import { OperationsService } from 'src/app/services/operations/operations.service';
 import { FileUtil } from 'src/app/utilities/file-util';
 import { FileDroppableConfig } from '../file-dropper/file-dropper-config';
-import { OperationsService } from 'src/app/services/operations/operations.service';
 
 @Component({
   selector: 'cps2-wizard',
@@ -26,9 +27,9 @@ export class WizardComponent {
       uniqueExtensions: true,
     },
     'to_darksoft': {
-      minFiles: 2,
-      maxFiles: 2,
-      allowedFileExtensions: [ 'mra', 'zip' ],
+      minFiles: 1,
+      maxFiles: 1,
+      allowedFileExtensions: [ 'zip' ],
       uniqueExtensions: true,
     },
     'ips_to_mra': {
@@ -47,16 +48,16 @@ export class WizardComponent {
 
   helpText: { [operation: string]: string } = {
     'to_mame':     'Upload a MAME ROM and a .mra file that contains the patches you wish to apply. The output will be a patched MAME format ROM.',
-    'to_darksoft': 'Upload a MAME ROM and a .mra file that contains the patches you wish to apply. The output will be a Darksoft format ROM.',
+    'to_darksoft': 'Upload a MAME ROM to convert to the Darksoft file format. The output will be a .zip file containing all of a Darksoft converted ROM. You must create your own NAME file.',
     'ips_to_mra':  'Upload a MAME ROM and a .ips file that contains the patches you wish to convert to .mra format. The output will be a .mra file that contains only the <patch>es (you must complete the file yourself).',
     'mra_to_ips':  'Upload a MAME ROM and a .mra file that contains the patches you wish to convert to .ips format. The output will be a .zip containing .ips files named the same as the ROM parts you need to apply the patches to.',
   }
 
   operationButtonText: { [operation: string]: string } = {
     'to_mame': 'Apply Patch',
-    'to_darksoft': 'Apply Patch',
-    'ips_to_mra': 'Convert .ips',
-    'mra_to_ips': 'Convert .mra',
+    'to_darksoft': 'Convert MAME to Darksoft',
+    'ips_to_mra': 'Convert .ips to .mra',
+    'mra_to_ips': 'Convert .mra to .ips',
   };
 
   downloadLink: SafeUrl = '';
@@ -65,6 +66,7 @@ export class WizardComponent {
   gotFileProcessingError = new Subject<string>();
   outputFilename = '';
   processedPatchFiles!: ProcessedPatchFiles;
+  processedRomMap!: RomMapV2;
   processing = false;
 
   operationForm = this.fb.group({
@@ -105,6 +107,24 @@ export class WizardComponent {
         });
         break;
 
+      case 'to_darksoft':
+        this.processing = true;
+        this.fileProcessingService.processRomFilesForDarksoftConversion(files[0]).then((fullRomMap) => {
+          this.downloadLink = '';
+          this.gotFileProcessingError.next('');
+          this.gotProcessedFiles.emit();
+          this.gotPatchedBinary.emit();
+
+          this.outputFilename = files[0].name;
+          this.processedRomMap = fullRomMap;
+          this.processing = false;
+        }, (error) => {
+          this.fileProcessingError = error.message;
+          this.gotFileProcessingError.next(this.fileProcessingError);
+          this.processing = false;
+        });
+        break;
+
       default:
         break;
     }
@@ -117,6 +137,11 @@ export class WizardComponent {
       const result = await this.operationsService.applyMraPatch(this.processedPatchFiles);
       this.downloadLink = result.downloadLink;
       this.gotPatchedBinary.emit(result.modifiedRomFiles);
+      this.processing = false;
+    } else if (operation === 'to_darksoft') {
+      this.processing = true;
+      const result = await this.operationsService.convertMameToDarksoft(this.processedRomMap);
+      this.downloadLink = result;
       this.processing = false;
     } else if (operation === 'mra_to_ips') {
       this.processing = true;

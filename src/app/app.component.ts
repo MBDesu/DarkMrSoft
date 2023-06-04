@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
 import { ProcessedPatchFiles } from './models/rom';
-import { LogService } from './services/log/log.service';
-import { RomService } from './services/rom/rom.service';
 import { FileUtil } from './utilities/file-util';
+import { SupportedRomsModalComponent } from './components/supported-roms-modal/supported-roms-modal.component';
 
 @Component({
   selector: 'cps2-root',
@@ -17,10 +17,9 @@ export class AppComponent {
   // .mra file. Maybe display a warning if something doesn't match? Or error
   // out. I dunno.
 
-  // TODO: add .mra to .ips (or vice versa) conversion
+  // TODO: add .ips to .mra conversion
 
-  // TODO: add Darksoft file format generation
-
+  // below *sort of* done... sort of. Needs revision.
   // TODO: re-regex the MAME ROM definitions so that we can patch non-executable
   // regions (graphics, etc.)
 
@@ -33,7 +32,7 @@ export class AppComponent {
   dumps = false;
   error = '';
 
-  constructor(private matIconRegistry: MatIconRegistry, private sanitizer: DomSanitizer, private log: LogService, private romService: RomService) {
+  constructor(private dialog: MatDialog, private matIconRegistry: MatIconRegistry, private sanitizer: DomSanitizer) {
     this.matIconRegistry.addSvgIcon(
       'github',
       this.sanitizer.bypassSecurityTrustResourceUrl('../assets/github.svg')
@@ -56,6 +55,10 @@ export class AppComponent {
     } else {
       this.combinedEncryptedModifiedBinary = new Uint8Array();
     }
+  }
+
+  openSupportModal(): void {
+    this.dialog.open(SupportedRomsModalComponent, {});
   }
 
 }

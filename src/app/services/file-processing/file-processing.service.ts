@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Patch, ProcessedMraFile } from 'src/app/models/mra';
 import { ProcessedPatchFiles, ProcessedRomFiles } from 'src/app/models/rom';
-import { RomMap } from 'src/app/models/rom-map';
+import { RomMap, RomMapV2 } from 'src/app/models/rom-map';
 import { ByteUtil } from 'src/app/utilities/byte-util';
 import { FileUtil } from 'src/app/utilities/file-util';
 import { LogService } from '../log/log.service';
@@ -18,7 +18,7 @@ export class FileProcessingService {
     const zipFile = files.find((file) => FileUtil.fileHasExtension(file, 'zip'));
     const mraFile = files.find((file) => FileUtil.fileHasExtension(file, 'mra'));
     if (zipFile && mraFile) {
-      const processedRomFiles = await this.processRomFiles(zipFile);
+      const processedRomFiles = await this.processRomFilesForPatching(zipFile);
       const processedMraFile = await this.processMraFile(mraFile);
       return { processedRomFiles: processedRomFiles, processedMraFile: processedMraFile };
     } else {
@@ -26,7 +26,7 @@ export class FileProcessingService {
     }
   }
 
-  private async processRomFiles(zipFile: File): Promise<ProcessedRomFiles> {
+  private async processRomFilesForPatching(zipFile: File): Promise<ProcessedRomFiles> {
     const romFiles = await FileUtil.readZipFile(zipFile);
     const romMap = this.romService.mapRom(FileUtil.getFileName(zipFile), romFiles);
     const executableRomFiles = this.processRomParts(romMap);
@@ -37,6 +37,12 @@ export class FileProcessingService {
       romMap: romMap,
       executableRomFiles: executableRomFiles,
     };
+  }
+
+  async processRomFilesForDarksoftConversion(zipFile: File): Promise<RomMapV2> {
+    const romFiles = await FileUtil.readZipFile(zipFile);
+    const romName = FileUtil.getFileName(zipFile);
+    return this.romService.getFullRomMap(romName, romFiles);
   }
 
   // can't remember if ES2015+ respects insertion order or not and cba to look

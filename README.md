@@ -20,3 +20,17 @@ Run `ng build` to build the project. The build artifacts will be stored in the `
 ## Further help
 
 To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+
+## Darksoft CPS2 Multi File Format
+
+I'm not sure where else to document this, so I am documenting it here. The Darksoft CPS2 Multi file format is as follows (assume each `flash` file is padded with `0xff` to 4 MB unless otherwise stated):
+
+| MAME ROM Region   | MAME Files          | Darksoft Files          | Notes                                                                                                                      |
+| ----------------: | ------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------|
+| `audiocpu`        | `rom.01`, `rom.02`  | `flash.01`              | These files are simply concatenated and then padded with `0xff` to 4 MB. Sometimes there's only 1 of them, such as `19xx`. |
+| `maincpu`         | `rom.03` - `rom.10` | `flash.02`              | Some ROMs do not have 8 `maincpu` files. They are concatenated and padded with `0xff` to 4 MB if needed.                  |
+| `qsound`          | `rom.11`, `rom.12`  | `flash.03`, `flash.04`* | If `qsound` files do not exceed 4 MB, then `flash.04` is not necessary.                                                    |
+| `gfx`             | `rom.13`, `rom.14`  | `flash.05`, `flash.06`* | If the MAME files do not exceed 4 MB after padding each to 2 MB with `0xff`, then `flash.06` is not necessary.             |
+| `gfx`             | `rom.15`, `rom.16`  | `flash.07`, `flash.07`* | If the MAME files do not exceed 4 MB after padding each to 2 MB with `0xff`, then `flash.08` is not necessary.             |
+| `gfx`             | `rom.17`, `rom.18`  | `flash.09`, `flash.08`* | If the MAME files do not exceed 4 MB after padding each to 2 MB with `0xff`, then `flash.10` is not necessary.             |
+| `gfx`             | `rom.19`, `rom.20`  | `flash.11`, `flash.12`* | If the MAME files do not exceed 4 MB after padding each to 2 MB with `0xff`, then `flash.12` is not necessary.             |

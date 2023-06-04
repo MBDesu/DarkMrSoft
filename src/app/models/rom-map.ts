@@ -12,6 +12,21 @@ export interface RomMap {
   key: File;
 }
 
+export interface RomMapV2 {
+  regions: { [regionName: string]: RomProgramSpaceV2 };
+}
+
+export interface RomProgramSpaceV2 {
+  size: number;
+  files: { [fileName: string]: RomFileV2 };
+}
+
+export interface RomFileV2 {
+  offset: number;
+  size: number;
+  file?: File;
+}
+
 export interface RomProgramSpace {
   totalSize: number;
   executableRegions: RomExecutableRegion[];

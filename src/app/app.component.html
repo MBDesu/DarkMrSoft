@@ -9,18 +9,29 @@
     <div>
       <p>If you find bugs, please open an issue in the repository linked in the
       top right of this page.</p>
-      <p><strong>MAME users:</strong> if you use a patched ROM with MAME, you must
-      load it from the command line. The CRC of the files will not match what
-      MAME has and it will not load your ROM from the UI.</p>
-      <p><strong>Darksoft users:</strong> if you use a patched ROM with Darksoft, ensure
-      you have the latest firmware that supports key writing. Use <a
-      href="https://www.arcade-projects.com/threads/cps2-multi-romset-generator.9425/" class="mat-accent">this</a>
-      tool to convert the ROM to a format suitable for Darksoft. Pay attention
-      to <a
+      <p><strong>Note:</strong> you may patch most bootlegs and Phoenix set ROMs
+      below, but you cannot convert them to Darksoft. Only encrypted ROM sets
+      will work with either patching or conversion, and only non-bootleg,
+      non-Phoenix sets will work for Darksoft conversion. Support for
+      unencrypted ROM sets may be added in a future update. Click <button
+      mat-button color="primary" (click)="openSupportModal()">here</button> for a list of supported ROM files and the
+      operations on them.</p>
+      <p><strong>Note:</strong> this utility does not patch non-executable
+      regions of ROM today. this means that graphics and sound patches cannot be
+      applied with this tool. This will change in a future update.</p>
+      <p><strong>MAME users:</strong> if you use a patched ROM with MAME, you
+      must load it from the command line. The CRC of the files will not match
+      what MAME has and it will not load your ROM from the UI.</p>
+      <p><strong>Darksoft users:</strong> if you use a patched ROM with
+      Darksoft, ensure you have the latest firmware that supports key writing.
+      Use <a
+      href="https://www.arcade-projects.com/threads/cps2-multi-romset-generator.9425/"
+      class="mat-accent">this</a> tool to convert the ROM to a format suitable
+      for Darksoft (pay attention to <a
       href="https://www.arcade-projects.com/threads/cps2-multi-romset-generator.9425/page-2#post-288604">this</a>
-      post as well.</p>
-      <p><strong>Note:</strong> this patcher only works with the <em>executable</em> parts of a ROM file. Graphics patches cannot be applied here. This may be changed in a future update.</p>
-      <p><strong>Note:</strong> if this produces an <code>eeprom</code> file
+      post as well), or you can patch a MAME ROM below and then convert the
+      result to Darksoft format.</p>
+      <p><strong>Note:</strong> if patching produces an <code>eeprom</code> file
       inside of the resulting <code>.zip</code>, it means the <code>.mra</code>
       file sets nvram (the test menu config). If you are on MAME, just extract
       this file in <code>&lt;mame installation&gt;/nvram/&lt;rom

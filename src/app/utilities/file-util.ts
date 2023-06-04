@@ -20,6 +20,19 @@ export class FileUtil {
     return file.name.split('.').pop()?.toLowerCase() || '';
   }
 
+  static async convertFileToUint8Array(file: File): Promise<Uint8Array> {
+    const fileBuffer = await file.arrayBuffer();
+    return new Uint8Array(fileBuffer);
+  }
+
+  static orderRomFilesByNumericExtension(files: File[]): void {
+    files.sort((a, b) => {
+      const aExt = this.getFileExtension(a).replace(/[^\d]/, '');
+      const bExt = this.getFileExtension(b).replace(/[^\d]/, '');
+      return aExt.localeCompare(bExt); // TODO: is localeCompare safe here...?
+    });
+  }
+
   static async concatenateFilesToUint8Array(files: File[]): Promise<Uint8Array> {
     let len = 0;
     for (const file of files) {
