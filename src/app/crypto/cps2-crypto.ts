@@ -3,8 +3,6 @@
 // the encryption algo is broken somewhere. feistel implementation seems fine.
 // it seems like a data type issue. compare to output from rahash2 with loggers.
 
-import { ByteUtil } from "../utilities/byte-util";
-
 function bit(x: number, n: number): number {
   return ((x | 0) >> (n | 0)) & 1;
 }
@@ -14,10 +12,10 @@ function bit(x: number, n: number): number {
 // must be used for the corresponding output bits in f1 and f3 or in f2 and f4)
 class SBox {
   table = new Uint8Array(64);
-  inputs: number[] = [];  // positions of the inputs bits, -1 means no input except from key
-  outputs: number[] = []; // positions of the output bits
+  inputs = new Int16Array();  // positions of the inputs bits, -1 means no input except from key
+  outputs = new Int16Array(); // positions of the output bits
 
-  constructor(table: Uint8Array, inputs: number[], outputs: number[]) {
+  constructor(table: Uint8Array, inputs: Int16Array, outputs: Int16Array) {
     this.table = table;
     this.inputs = inputs;
     this.outputs = outputs;
@@ -28,10 +26,9 @@ class SBox {
 
     for (let i = 0; i < 6; ++i) {
       if (this.inputs[i] >= 0) {
-        res |= bit((val | 0), (this.inputs[i] | 0));
+        res |= (bit(val, this.inputs[i]) << i);
       }
     }
-
     return res;
   }
 
@@ -43,17 +40,19 @@ class OptimizedSBox {
 
   optimize(sbox: SBox): void {
     for (let i = 0; i < 256; ++i) {
+      this.inputLookup[i] = sbox.extractInputs(i);
+    }
+
+    for (let i = 0; i < 64; ++i) {
       const o = sbox.table[i];
 
       this.output[i] = 0;
-      if (o & 1) this.output[i] |= 1 << sbox.outputs[0];
-      if (o & 2) this.output[i] |= 1 << sbox.outputs[1];
+      if (o & 1) this.output[i] |= (1 << sbox.outputs[0]);
+      if (o & 2) this.output[i] |= (1 << sbox.outputs[1]);
     }
   }
 
   fn(input: number, key: number): number {
-    input &= 0xff;
-    key &= 0xffff;
     return this.output[this.inputLookup[input] ^ (key & 0x3f)];
   }
 
@@ -66,288 +65,288 @@ export class Cps2Crypto {
   private lowerLimit!: number;
   private masterKey = new Uint32Array(2);
 
-  private fn1_groupA: number[] = [ 10, 4, 6, 7, 2, 13, 15, 14 ];
-  private fn1_groupB: number[] = [  0, 1, 3, 5, 8,  9, 11, 12 ];
-  private fn2_groupA: number[] = [ 6, 0, 2, 13, 1,  4, 14,  7 ];
-  private fn2_groupB: number[] = [ 3, 5, 9, 10, 8, 15, 12, 11 ];
+  private fn1_groupA: readonly number[] = [ 10, 4, 6, 7, 2, 13, 15, 14 ];
+  private fn1_groupB: readonly number[] = [  0, 1, 3, 5, 8,  9, 11, 12 ];
+  private fn2_groupA: readonly number[] = [ 6, 0, 2, 13, 1,  4, 14,  7 ];
+  private fn2_groupB: readonly number[] = [ 3, 5, 9, 10, 8, 15, 12, 11 ];
 
   private fn1_r1_boxes: SBox[] = [
     new SBox( 
-      new Uint8Array([
+      Uint8Array.from([
         0,2,2,0,1,0,1,1,3,2,0,3,0,3,1,2,1,1,1,2,1,3,2,2,2,3,3,2,1,1,1,2,
         2,2,0,0,3,1,3,1,1,1,3,0,0,1,0,0,1,2,2,1,2,3,2,2,2,3,1,3,2,0,1,3,
       ]),
-      [ 3, 4, 5, 6, -1, -1 ],
-      [ 3, 6 ]
+      Int16Array.from([ 3, 4, 5, 6, -1, -1 ]),
+      Int16Array.from([ 3, 6 ]),
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         3,0,2,2,2,1,1,1,1,2,1,0,0,0,2,3,2,3,1,3,0,0,0,2,1,2,2,3,0,3,3,3,
         0,1,3,2,3,3,3,1,1,1,1,2,0,1,2,1,3,2,3,1,1,3,2,2,2,3,1,3,2,3,0,0,
       ]),
-      [ 0, 1, 2, 4, 7, -1 ],
-      [ 2, 7 ]
+      Int16Array.from([ 0, 1, 2, 4, 7, -1 ]),
+      Int16Array.from([ 2, 7 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         3,0,3,1,1,0,2,2,3,1,2,0,3,3,2,3,0,1,0,1,2,3,0,2,0,2,0,1,0,0,1,0,
         2,3,1,2,1,0,2,0,2,1,0,1,0,2,1,0,3,1,2,3,1,3,1,1,1,2,0,2,2,0,0,0,
       ]),
-      [ 0, 1, 2, 3, 6, 7 ],
-      [ 0, 1 ]
+      Int16Array.from([ 0, 1, 2, 3, 6, 7 ]),
+      Int16Array.from([ 0, 1 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         3,2,0,3,0,2,2,1,1,2,3,2,1,3,2,1,2,2,1,3,3,2,1,0,1,0,1,3,0,0,0,2,
         2,1,0,1,0,1,0,1,3,1,1,2,2,3,2,0,3,3,2,0,2,1,3,3,0,0,3,0,1,1,3,3,
       ]),
-      [ 0, 1, 3, 5, 6, 7 ],
-      [ 4, 5 ]
+      Int16Array.from([ 0, 1, 3, 5, 6, 7 ]),
+      Int16Array.from([ 4, 5 ])
     ),
   ]; 
 
   private fn1_r2_boxes: SBox[] = [
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         3,3,2,0,3,0,3,1,0,3,0,1,0,2,1,3,1,3,0,3,3,1,3,3,3,2,3,2,2,3,1,2,
         0,2,2,1,0,1,2,0,3,3,0,1,3,2,1,2,3,0,1,3,0,1,2,2,1,2,1,2,0,1,3,0,
       ]),
-      [ 0, 1, 2, 3, 6, -1 ],
-      [ 1, 6 ]
+      Int16Array.from([ 0, 1, 2, 3, 6, -1 ]),
+      Int16Array.from([ 1, 6 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         1,2,3,2,1,3,0,1,1,0,2,0,0,2,3,2,3,3,0,1,2,2,1,0,1,0,1,2,3,2,1,3,
         2,2,2,0,1,0,2,3,2,1,2,1,2,1,0,3,0,1,2,3,1,2,1,3,2,0,3,2,3,0,2,0,
       ]),
-      [ 2, 4, 5, 6, 7, -1 ],
-      [ 5, 7 ]
+      Int16Array.from([ 2, 4, 5, 6, 7, -1 ]),
+      Int16Array.from([ 5, 7 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         0,1,0,2,1,1,0,1,0,2,2,2,1,3,0,0,1,1,3,1,2,2,2,3,1,0,3,3,3,2,2,2,
         1,1,3,0,3,1,3,0,1,3,3,2,1,1,0,0,1,2,2,2,1,1,1,2,2,0,0,3,2,3,1,3,
       ]),
-      [ 1, 2, 3, 4, 5, 7 ],
-      [ 0, 3 ]
+      Int16Array.from([ 1, 2, 3, 4, 5, 7 ]),
+      Int16Array.from([ 0, 3 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         2,1,0,3,3,3,2,0,1,2,1,1,1,0,3,1,1,3,3,0,1,2,1,0,0,0,3,0,3,0,3,0,
         1,3,3,3,0,3,2,0,2,1,2,2,2,1,1,3,0,1,0,1,0,1,1,1,1,3,1,0,1,2,3,3,
       ]),
-      [ 0, 1, 3, 4, 6, 7 ],
-      [ 2, 4 ]
+      Int16Array.from([ 0, 1, 3, 4, 6, 7 ]),
+      Int16Array.from([ 2, 4 ])
     ),
   ];
 
   private fn1_r3_boxes: SBox[] = [
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         0,0,0,3,3,1,1,0,2,0,2,0,0,0,3,2,0,1,2,3,2,2,1,0,3,0,0,0,0,0,2,3,
         3,0,0,1,1,2,3,3,0,1,3,2,0,1,3,3,2,0,0,1,0,2,0,0,0,3,1,3,3,3,3,3,
       ]),
-      [ 0, 1, 5, 6, 7, -1 ],
-      [ 0, 5 ]
+      Int16Array.from([ 0, 1, 5, 6, 7, -1 ]),
+      Int16Array.from([ 0, 5 ])
     ),
     new SBox(
-     new Uint8Array([
+      Uint8Array.from([
         2,3,2,3,0,2,3,0,2,2,3,0,3,2,0,2,1,0,2,3,1,1,1,0,0,1,0,2,1,2,2,1,
         3,0,2,1,2,3,3,0,3,2,3,1,0,2,1,0,1,2,2,3,0,2,1,3,1,3,0,2,1,1,1,3,
       ]),
-      [ 2, 3, 4, 6, 7, -1 ],
-      [ 6, 7 ]
+      Int16Array.from([ 2, 3, 4, 6, 7, -1 ]),
+      Int16Array.from([ 6, 7 ])
     ),
     new SBox(
-     new Uint8Array([
+      Uint8Array.from([
         3,0,2,1,1,3,1,2,2,1,2,2,2,0,0,1,2,3,1,0,2,0,0,2,3,1,2,0,0,0,3,0,
         2,1,1,2,0,0,1,2,3,1,1,2,0,1,3,0,3,1,1,0,0,2,3,0,0,0,0,3,2,0,0,0,
       ]),
-     [ 0, 2, 3, 4, 5, 6 ],
-     [ 1, 4 ]
+      Int16Array.from([ 0, 2, 3, 4, 5, 6 ]),
+      Int16Array.from([ 1, 4 ])
     ),
     new SBox(
-     new Uint8Array([
+      Uint8Array.from([
         0,1,0,0,2,1,3,2,3,3,2,1,0,1,1,1,1,1,0,3,3,1,1,0,0,2,2,1,0,3,3,2,
         1,3,3,0,3,0,2,1,1,2,3,2,2,2,1,0,0,3,3,3,2,2,3,1,0,2,3,0,3,1,1,0,
       ]),
-      [ 0, 1, 2, 3, 5, 7 ],
-      [ 2, 3 ]
+      Int16Array.from([ 0, 1, 2, 3, 5, 7 ]),
+      Int16Array.from([ 2, 3 ])
     ),
   ];
   
   private fn1_r4_boxes: SBox[] = [
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         1,1,1,1,1,0,1,3,3,2,3,0,1,2,0,2,3,3,0,1,2,1,2,3,0,3,2,3,2,0,1,2,
         0,1,0,3,2,1,3,2,3,1,2,3,2,0,1,2,2,0,0,0,2,1,3,0,3,1,3,0,1,3,3,0,
       ]),
-      [ 1, 2, 3, 4, 5, 7 ],
-      [ 0, 4 ]
+      Int16Array.from([ 1, 2, 3, 4, 5, 7 ]),
+      Int16Array.from([ 0, 4 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         3,0,0,0,0,1,0,2,3,3,1,3,0,3,1,2,2,2,3,1,0,0,2,0,1,0,2,2,3,3,0,0,
         1,1,3,0,2,3,0,3,0,3,0,2,0,2,0,1,0,3,0,1,3,1,1,0,0,1,3,3,2,2,1,0,
       ]),
-      [ 0, 1, 2, 3, 5, 6 ],
-      [ 1, 3 ]
+      Int16Array.from([ 0, 1, 2, 3, 5, 6 ]),
+      Int16Array.from([ 1, 3 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         0,1,1,2,0,1,3,1,2,0,3,2,0,0,3,0,3,0,1,2,2,3,3,2,3,2,0,1,0,0,1,0,
         3,0,2,3,0,2,2,2,1,1,0,2,2,0,0,1,2,1,1,1,2,3,0,3,1,2,3,3,1,1,3,0,
       ]),
-      [ 0, 2, 4, 5, 6, 7 ],
-      [ 2, 6 ]
+      Int16Array.from([ 0, 2, 4, 5, 6, 7 ]),
+      Int16Array.from([ 2, 6 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         0,1,2,2,0,1,0,3,2,2,1,1,3,2,0,2,0,1,3,3,0,2,2,3,3,2,0,0,2,1,3,3,
         1,1,1,3,1,2,1,1,0,3,3,2,3,2,3,0,3,1,0,0,3,0,0,0,2,2,2,1,2,3,0,0,
       ]),
-      [ 0, 1, 3, 4, 6, 7 ],
-      [ 5, 7 ]
+      Int16Array.from([ 0, 1, 3, 4, 6, 7 ]),
+      Int16Array.from([ 5, 7 ])
     ),
   ];
 
   private fn2_r1_boxes: SBox[] = [
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         2,0,2,0,3,0,0,3,1,1,0,1,3,2,0,1,2,0,1,2,0,2,0,2,2,2,3,0,2,1,3,0,
         0,1,0,1,2,2,3,3,0,3,0,2,3,0,1,2,1,1,0,2,0,3,1,1,2,2,1,3,1,1,3,1,
       ]),
-      [ 0, 3, 4, 5, 7, -1 ],
-      [ 6, 7 ]
+      Int16Array.from([ 0, 3, 4, 5, 7, -1 ]),
+      Int16Array.from([ 6, 7 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         1,1,0,3,0,2,0,1,3,0,2,0,1,1,0,0,1,3,2,2,0,2,2,2,2,0,1,3,3,3,1,1,
         1,3,1,3,2,2,2,2,2,2,0,1,0,1,1,2,3,1,1,2,0,3,3,3,2,2,3,1,1,1,3,0,
       ]),
-      [ 1, 2, 3, 4, 6, -1 ],
-      [ 3, 5 ]
+      Int16Array.from([ 1, 2, 3, 4, 6, -1 ]),
+      Int16Array.from([ 3, 5 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         1,0,2,2,3,3,3,3,1,2,2,1,0,1,2,1,1,2,3,1,2,0,0,1,2,3,1,2,0,0,0,2,
         2,0,1,1,0,0,2,0,0,0,2,3,2,3,0,1,3,0,0,0,2,3,2,0,1,3,2,1,3,1,1,3,
       ]),
-      [ 1, 2, 4, 5, 6, 7 ],
-      [ 1, 4 ]
+      Int16Array.from([ 1, 2, 4, 5, 6, 7 ]),
+      Int16Array.from([ 1, 4 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         1,3,3,0,3,2,3,1,3,2,1,1,3,3,2,1,2,3,0,3,1,0,0,2,3,0,0,0,3,3,0,1,
         2,3,0,0,0,1,2,1,3,0,0,1,0,2,2,2,3,3,1,2,1,3,0,0,0,3,0,1,3,2,2,0,
       ]),
-      [ 0, 2, 3, 5, 6, 7 ],
-      [ 0, 2 ]
+      Int16Array.from([ 0, 2, 3, 5, 6, 7 ]),
+      Int16Array.from([ 0, 2 ])
     ),
   ];
   
   private fn2_r2_boxes: SBox[] = [
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         3,1,3,0,3,0,3,1,3,0,0,1,1,3,0,3,1,1,0,1,2,3,2,3,3,1,2,2,2,0,2,3,
         2,2,2,1,1,3,3,0,3,1,2,1,1,1,0,2,0,3,3,0,0,2,0,0,1,1,2,1,2,1,1,0,
       ]),
-      [ 0, 2, 4, 6, -1, -1],
-      [ 4, 6 ]
+      Int16Array.from([ 0, 2, 4, 6, -1, -1]),
+      Int16Array.from([ 4, 6 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         0,3,0,3,3,2,1,2,3,1,1,1,2,0,2,3,0,3,1,2,2,1,3,3,3,2,1,2,2,0,1,0,
         2,3,0,1,2,0,1,1,2,0,2,1,2,0,2,3,3,1,0,2,3,3,0,3,1,1,3,0,0,1,2,0,
       ]),
-      [ 1, 3, 4, 5, 6, 7 ],
-      [ 0, 3 ]
+      Int16Array.from([ 1, 3, 4, 5, 6, 7 ]),
+      Int16Array.from([ 0, 3 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         0,0,2,1,3,2,1,0,1,2,2,2,1,1,0,3,1,2,2,3,2,1,1,0,3,0,0,1,1,2,3,1,
         3,3,2,2,1,0,1,1,1,2,0,1,2,3,0,3,3,0,3,2,2,0,2,2,1,2,3,2,1,0,2,1,
       ]),
-      [ 0, 1, 3, 4, 5, 7 ],
-      [ 1, 7 ]
+      Int16Array.from([ 0, 1, 3, 4, 5, 7 ]),
+      Int16Array.from([ 1, 7 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         0,2,1,2,0,2,2,0,1,3,2,0,3,2,3,0,3,3,2,3,1,2,3,1,2,2,0,0,2,2,1,2,
         2,3,3,3,1,1,0,0,0,3,2,0,3,2,3,1,1,1,1,0,1,0,1,3,0,0,1,2,2,3,2,0,
       ]),
-      [ 1, 2, 3, 5, 6, 7 ],
-      [ 2, 5 ]
+      Int16Array.from([ 1, 2, 3, 5, 6, 7 ]),
+      Int16Array.from([ 2, 5 ])
     ),
   ];
   
   private fn2_r3_boxes: SBox[] = [
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         2,1,2,1,2,3,1,3,2,2,1,3,3,0,0,1,0,2,0,3,3,1,0,0,1,1,0,2,3,2,1,2,
         1,1,2,1,1,3,2,2,0,2,2,3,3,3,2,0,0,0,0,0,3,3,3,0,1,2,1,0,2,3,3,1,
       ]),
-      [ 2, 3, 4, 6, -1, -1],
-      [ 3, 5 ]
+      Int16Array.from([ 2, 3, 4, 6, -1, -1]),
+      Int16Array.from([ 3, 5 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         3,2,3,3,1,0,3,0,2,0,1,1,1,0,3,0,3,1,3,1,0,1,2,3,2,2,3,2,0,1,1,2,
         3,0,0,2,1,0,0,2,2,0,1,0,0,2,0,0,1,3,1,3,2,0,3,3,1,0,2,2,2,3,0,0,
       ]),
-      [ 0, 1, 3, 5, 7, -1 ],
-      [ 0, 2 ]
+      Int16Array.from([ 0, 1, 3, 5, 7, -1 ]),
+      Int16Array.from([ 0, 2 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         2,2,1,0,2,3,3,0,0,0,1,3,1,2,3,2,2,3,1,3,0,3,0,3,3,2,2,1,0,0,0,2,
         1,2,2,2,0,0,1,2,0,1,3,0,2,3,2,1,3,2,2,2,3,1,3,0,2,0,2,1,0,3,3,1,
       ]),
-      [ 0, 1, 2, 3, 5, 7 ],
-      [ 1, 6 ]
+      Int16Array.from([ 0, 1, 2, 3, 5, 7 ]),
+      Int16Array.from([ 1, 6 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         1,2,3,2,0,2,1,3,3,1,0,1,1,2,2,0,0,1,1,1,2,1,1,2,0,1,3,3,1,1,1,2,
         3,3,1,0,2,1,1,1,2,1,0,0,2,2,3,2,3,2,2,0,2,2,3,3,0,2,3,0,2,2,1,1,
       ]),
-      [ 0, 2, 4, 5, 6, 7 ],
-      [ 4, 7 ]
+      Int16Array.from([ 0, 2, 4, 5, 6, 7 ]),
+      Int16Array.from([ 4, 7 ])
     ),
   ];
   
   private fn2_r4_boxes: SBox[] = [
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         2,0,1,1,2,1,3,3,1,1,1,2,0,1,0,2,0,1,2,0,2,3,0,2,3,3,2,2,3,2,0,1,
         3,0,2,0,2,3,1,3,2,0,0,1,1,2,3,1,1,1,0,1,2,0,3,3,1,1,1,3,3,1,1,0,
       ]),
-      [ 0, 1, 3, 6, 7, -1 ],
-      [ 0, 3 ]
+      Int16Array.from([ 0, 1, 3, 6, 7, -1 ]),
+      Int16Array.from([ 0, 3 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         1,2,2,1,0,3,3,1,0,2,2,2,1,0,1,0,1,1,0,1,0,2,1,0,2,1,0,2,3,2,3,3,
         2,2,1,2,2,3,1,3,3,3,0,1,0,1,3,0,0,0,1,2,0,3,3,2,3,2,1,3,2,1,0,2,
       ]),
-      [ 0, 1, 2, 4, 5, 6 ],
-      [ 4, 7 ]
+      Int16Array.from([ 0, 1, 2, 4, 5, 6 ]),
+      Int16Array.from([ 4, 7 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         2,3,2,1,3,2,3,0,0,2,1,1,0,0,3,2,3,1,0,1,2,2,2,1,3,2,2,1,0,2,1,2,
         0,3,1,0,0,3,1,1,3,3,2,0,1,0,1,3,0,0,1,2,1,2,3,2,1,0,0,3,2,1,1,3,
       ]),
-      [ 0, 2, 3, 4, 5, 7 ],
-      [ 1, 2 ]
+      Int16Array.from([ 0, 2, 3, 4, 5, 7 ]),
+      Int16Array.from([ 1, 2 ])
     ),
     new SBox(
-      new Uint8Array([
+      Uint8Array.from([
         2,0,0,3,2,2,2,1,3,3,1,1,2,0,0,3,1,0,3,2,1,0,2,0,3,2,2,3,2,0,3,0,
         1,3,0,2,2,1,3,3,0,1,0,3,1,1,3,2,0,3,0,2,3,2,1,3,2,3,0,0,1,3,2,1,
       ]),
-      [ 2, 3, 4, 5, 6, 7 ],
-      [ 5, 6 ]
+      Int16Array.from([ 2, 3, 4, 5, 6, 7 ]),
+      Int16Array.from([ 5, 6 ])
     ),
   ];
 
@@ -361,9 +360,8 @@ export class Cps2Crypto {
     const uint16Array = new Uint16Array(length / 2);
 
     for (let i = 0, j = 0; i < length; i += 2, j++) {
-      uint16Array[j] = (arr[i] << 8) | arr[i + 1];
+      uint16Array[j] = (arr[i + 1] << 8) | arr[i];
     }
-
     return uint16Array;
   }
 
@@ -373,8 +371,8 @@ export class Cps2Crypto {
 
     for (let i = 0; i < arr.length; i++) {
       const value = arr[i];
-      dataView.setUint8(i * 2, value & 0xff);
       dataView.setUint8(i * 2 + 1, (value >> 8) & 0xff);
+      dataView.setUint8(i * 2, value & 0xff);
     }
 
     return uint8Array;
@@ -461,12 +459,12 @@ export class Cps2Crypto {
     subkey[1] = 0;
 
     for (let i = 0; i < 64; ++i) {
-      (subkey[Math.floor(i / 32)] |= bit(seed, bits[i]) << (i % 32)) & 0xFFFFFFFF;
+      subkey[Math.floor(i / 32)] |= bit(seed, bits[i]) << (i % 32);
     }
   }
 
   private feistel(val: number,
-    bitsA: number[], bitsB: number[],
+    bitsA: readonly number[], bitsB: readonly number[],
     boxes1: OptimizedSBox[], boxes2: OptimizedSBox[],
     boxes3: OptimizedSBox[], boxes4: OptimizedSBox[],
     key1: number, key2: number,
@@ -474,10 +472,10 @@ export class Cps2Crypto {
     let l = this.bitswap8(val, bitsB[7], bitsB[6], bitsB[5], bitsB[4], bitsB[3], bitsB[2], bitsB[1], bitsB[0]) & 0xff;
     let r = this.bitswap8(val, bitsA[7], bitsA[6], bitsA[5], bitsA[4], bitsA[3], bitsA[2], bitsA[1], bitsA[0]) & 0xff;
 
-    l ^= this.fn(r, boxes1, key1 | 0);
-    r ^= this.fn(l, boxes2, key2 | 0);
-    l ^= this.fn(r, boxes3, key3 | 0);
-    r ^= this.fn(l, boxes4, key4 | 0);
+    l ^= this.fn(r, boxes1, key1) | 0;
+    r ^= this.fn(l, boxes2, key2) | 0;
+    l ^= this.fn(r | 0, boxes3, key3 | 0) | 0;
+    r ^= this.fn(l | 0, boxes4, key4 | 0) | 0;
 
     return (bit(l & 0xff, 0) << bitsA[0]) |
            (bit(l & 0xff, 1) << bitsA[1]) |
@@ -504,36 +502,37 @@ export class Cps2Crypto {
     }
   }
 
+  private initializeOptimizedSBoxes(sboxes: OptimizedSBox[]): void {
+    for (let i = 0; i < 4; i++) {
+      sboxes[i] = new OptimizedSBox();
+    }
+  }
+
   cps2Crypt(/* dir: Cps2Crypto.Direction */): Uint8Array {
     const key1 = new Uint32Array(4);
     const dec = new Uint16Array(this.rom.length);
-    const sboxes11 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
-    const sboxes12 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
-    const sboxes13 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
-    const sboxes14 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
-    const sboxes21 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
-    const sboxes22 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
-    const sboxes23 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
-    const sboxes24 = new Array<OptimizedSBox>(4).fill(new OptimizedSBox());
+    const sboxes10 = new Array<OptimizedSBox>(4);
+    const sboxes11 = new Array<OptimizedSBox>(4);
+    const sboxes12 = new Array<OptimizedSBox>(4);
+    const sboxes13 = new Array<OptimizedSBox>(4);
+    const sboxes20 = new Array<OptimizedSBox>(4);
+    const sboxes21 = new Array<OptimizedSBox>(4);
+    const sboxes22 = new Array<OptimizedSBox>(4);
+    const sboxes23 = new Array<OptimizedSBox>(4);
+    [sboxes10, sboxes11, sboxes12, sboxes13,
+     sboxes20, sboxes21, sboxes22, sboxes23].forEach((sboxArr) => this.initializeOptimizedSBoxes(sboxArr));
     const rom = this.rom;
     const length = rom.length;
     const masterKey = this.masterKey;
-    this.optimizeSBoxes(sboxes11, this.fn1_r1_boxes);
-    this.optimizeSBoxes(sboxes12, this.fn1_r2_boxes);
-    this.optimizeSBoxes(sboxes13, this.fn1_r3_boxes);
-    this.optimizeSBoxes(sboxes14, this.fn1_r4_boxes);
-    this.optimizeSBoxes(sboxes21, this.fn2_r1_boxes);
-    this.optimizeSBoxes(sboxes22, this.fn2_r2_boxes);
-    this.optimizeSBoxes(sboxes23, this.fn2_r3_boxes);
-    this.optimizeSBoxes(sboxes24, this.fn2_r4_boxes);
-
+    this.optimizeSBoxes(sboxes10, this.fn1_r1_boxes);
+    this.optimizeSBoxes(sboxes11, this.fn1_r2_boxes);
+    this.optimizeSBoxes(sboxes12, this.fn1_r3_boxes);
+    this.optimizeSBoxes(sboxes13, this.fn1_r4_boxes);
+    this.optimizeSBoxes(sboxes20, this.fn2_r1_boxes);
+    this.optimizeSBoxes(sboxes21, this.fn2_r2_boxes);
+    this.optimizeSBoxes(sboxes22, this.fn2_r3_boxes);
+    this.optimizeSBoxes(sboxes23, this.fn2_r4_boxes);
     this.expandKey(0, key1, masterKey);
-
-    let o = '0x';
-    key1.forEach((byte) => {
-      o += byte.toString(16);
-    });
-    console.log('key1', o);
 
     key1[0] ^= bit(key1[0] | 0, 1) <<  4;
     key1[0] ^= bit(key1[0] | 0, 2) <<  5;
@@ -543,42 +542,17 @@ export class Cps2Crypto {
     key1[2] ^= bit(key1[2] | 0, 1) <<  5;
     key1[2] ^= bit(key1[2] | 0, 8) << 11;
 
-    o = '0x';
-    key1.forEach((byte) => {
-      o += byte.toString(16);
-    });
-    console.log('key1 xor', o);
-
-    for (let i = 0; i < 0x10000; i++) {
+    for (let i = 0; i < 0x10000; ++i) {
       const subkey = new Uint32Array(2);
       const key2 = new Uint32Array(4);
 
-      const seed = this.feistel(i, this.fn1_groupA, this.fn1_groupB, sboxes11, sboxes12, sboxes13, sboxes14, key1[0], key1[1], key1[2], key1[3]);
-      console.log('seed', '0x' + seed.toString(16));
+      const seed = this.feistel(i, this.fn1_groupA, this.fn1_groupB, sboxes10, sboxes11, sboxes12, sboxes13, key1[0], key1[1], key1[2], key1[3]);
       this.expandSubkey(subkey, seed);
-
-      o = '0x';
-      subkey.forEach((byte) => {
-        o += byte.toString(16);
-      });
-      console.log('subkey expanded', o);
 
       subkey[0] ^= masterKey[0];
       subkey[1] ^= masterKey[1];
 
-      o = '0x';
-      subkey.forEach((byte) => {
-        o += byte.toString(16);
-      });
-      console.log('subkey xor', o);
-
       this.expandKey(1, key2, subkey);
-
-      o = '0x';
-      key2.forEach((byte) => {
-        o += byte.toString(16);
-      });
-      console.log('key2', o);
 
       key2[0] ^= bit(key2[0] | 0, 0) <<  5;
       key2[0] ^= bit(key2[0] | 0, 6) << 11;
@@ -589,15 +563,9 @@ export class Cps2Crypto {
       key2[2] ^= bit(key2[2] | 0, 7) << 11;
       key2[3] ^= bit(key2[3] | 0, 1) <<  5;
 
-      o = '0x';
-      key2.forEach((byte) => {
-        o += byte.toString(16);
-      });
-      console.log('key2 xor', o);
-
       for (let a = i; a < length; a += 0x10000) {
         if (a >= this.lowerLimit && a <= this.upperLimit) {
-          dec[a] = this.feistel(rom[a], this.fn2_groupA, this.fn2_groupB, sboxes21, sboxes22, sboxes23, sboxes24, key2[0], key2[1], key2[2], key2[3]);
+          dec[a] = this.feistel(rom[a], this.fn2_groupA, this.fn2_groupB, sboxes20, sboxes21, sboxes22, sboxes23, key2[0], key2[1], key2[2], key2[3]);
         } else {
           dec[a] = rom[a];
         }
@@ -626,11 +594,6 @@ export class Cps2Crypto {
   }
 
   private setKey(key: Uint8Array): void {
-    let keyString = '';
-    key.forEach((byte) => {
-      keyString += byte.toString(16);
-    });
-    console.log('key file', '0x' + keyString);
     const decoded = [0, 0, 0, 0];
     let b: number;
     for (b = 0; b < 10 * 16; b++) {
@@ -648,10 +611,8 @@ export class Cps2Crypto {
       this.upperLimit = (((~decoded[9] & 0x3ff) << 14) | 0x3fff) + 1;
       this.lowerLimit = 0;
     }
-    console.log('masterkey 1', '0x' + this.masterKey[0].toString(16));
-    console.log('masterkey 2', '0x' + this.masterKey[1].toString(16));
-    console.log('lowerLimit', '0x' + this.lowerLimit.toString(16));
-    console.log('upperlimit', '0x' + this.upperLimit.toString(16));
+    this.upperLimit = Math.floor(this.upperLimit / 2);
+    this.lowerLimit = Math.floor(this.lowerLimit / 2);
   }
 
 }
