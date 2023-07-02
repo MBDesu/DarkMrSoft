@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
-import { SafeUrl } from '@angular/platform-browser';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { Subject } from 'rxjs';
 import { ProcessedPatchFiles } from 'src/app/models/rom';
 import { FullRomMap } from 'src/app/models/rom-map';
@@ -18,8 +18,15 @@ export class WizardComponent {
 
   @Output() gotProcessedFiles = new EventEmitter<ProcessedPatchFiles>();
   @Output() gotPatchedBinary = new EventEmitter<File[]>();
+  @Output() gotBinaryAndKey = new EventEmitter<{ binary: Uint8Array, keyBytes: Uint8Array }>();
 
   dropperConfigs: { [key: string]: FileDroppableConfig } = {
+    'decrypt_opcodes': {
+      minFiles: 1,
+      maxFiles: 1,
+      allowedFileExtensions: [ 'zip' ],
+      uniqueExtensions: true,
+    },
     'to_mame': {
       minFiles: 2,
       maxFiles: 2,
@@ -47,19 +54,22 @@ export class WizardComponent {
   };
 
   helpText: { [operation: string]: string } = {
-    'to_mame':     'Upload a MAME ROM and a .mra file that contains the patches you wish to apply. The output will be a patched MAME format ROM.',
-    'to_darksoft': 'Upload a MAME ROM to convert to the Darksoft file format. The output will be a .zip file containing all of a Darksoft converted ROM. You must create your own NAME file.',
-    'ips_to_mra':  'Upload a MAME ROM and a .ips file that contains the patches you wish to convert to .mra format. The output will be a .mra file that contains only the <patch>es (you must complete the file yourself).',
-    'mra_to_ips':  'Upload a MAME ROM and a .mra file that contains the patches you wish to convert to .ips format. The output will be a .zip containing .ips files named the same as the ROM parts you need to apply the patches to.',
+    'to_mame':         'Upload a MAME ROM and a .mra file that contains the patches you wish to apply. The output will be a patched MAME format ROM.',
+    'to_darksoft':     'Upload a MAME ROM to convert to the Darksoft file format. The output will be a .zip file containing all of a Darksoft converted ROM. You must create your own NAME file.',
+    'decrypt_opcodes': 'Upload a MAME ROM that you wish to decrypt the opcodes of',
+    'ips_to_mra':      'Upload a MAME ROM and a .ips file that contains the patches you wish to convert to .mra format. The output will be a .mra file that contains only the <patch>es (you must complete the file yourself).',
+    'mra_to_ips':      'Upload a MAME ROM and a .mra file that contains the patches you wish to convert to .ips format. The output will be a .zip containing .ips files named the same as the ROM parts you need to apply the patches to.',
   }
 
   operationButtonText: { [operation: string]: string } = {
-    'to_mame': 'Apply Patch',
-    'to_darksoft': 'Convert MAME to Darksoft',
-    'ips_to_mra': 'Convert .ips to .mra',
-    'mra_to_ips': 'Convert .mra to .ips',
+    'to_mame':         'Apply Patch',
+    'to_darksoft':     'Convert MAME to Darksoft',
+    'decrypt_opcodes': 'Decrypt opcodes',
+    'ips_to_mra':      'Convert .ips to .mra',
+    'mra_to_ips':      'Convert .mra to .ips',
   };
 
+  binaryAndKey!: { binary: Uint8Array, keyBytes: Uint8Array };
   downloadLink: SafeUrl = '';
   fileDropperConfig!: FileDroppableConfig;
   fileProcessingError = '';
@@ -80,6 +90,7 @@ export class WizardComponent {
     private fb: FormBuilder,
     private fileProcessingService: FileProcessingService,
     private operationsService: OperationsService,
+    private domSanitizer: DomSanitizer
   ) { }
 
   filesAdded(files: File[]): void {
@@ -87,6 +98,20 @@ export class WizardComponent {
     const operation = this.operationForm.get('operation')?.value || 'none';
 
     switch (operation) {
+      case 'decrypt_opcodes':
+        this.processing = true;
+        this.fileProcessingService.getEncryptedBinaryAndKeyBytes(files[0]).then((binaryAndKey) => {
+          this.downloadLink = '';
+          this.gotBinaryAndKey.emit(binaryAndKey);
+          this.binaryAndKey = binaryAndKey;
+          this.outputFilename = FileUtil.getFileName(files[0], false) + '.bin';
+          this.processing = false;
+        }, (error) => {
+          this.fileProcessingError = error.message;
+          this.gotFileProcessingError.next(this.fileProcessingError);
+          this.processing = false;
+        });
+        break;
       case 'to_mame':
       case 'mra_to_ips':
         this.processing = true;
@@ -146,6 +171,11 @@ export class WizardComponent {
     } else if (operation === 'mra_to_ips') {
       this.processing = true;
       const result = await this.operationsService.convertMraToIps(this.processedPatchFiles);
+      this.downloadLink = result;
+      this.processing = false;
+    } else if (operation === 'decrypt_opcodes') {
+      this.processing = true;
+      const result = await this.operationsService.decryptOpcodes(this.binaryAndKey.binary, this.binaryAndKey.keyBytes, this.outputFilename);
       this.downloadLink = result;
       this.processing = false;
     }

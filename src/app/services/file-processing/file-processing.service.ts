@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
+import { Cps2Rom } from 'cps2-utils';
 import { Patch, ProcessedMraFile } from 'src/app/models/mra';
 import { ProcessedPatchFiles, ProcessedRomFiles } from 'src/app/models/rom';
-import { RomMap, FullRomMap } from 'src/app/models/rom-map';
+import { FullRomMap, RomMap } from 'src/app/models/rom-map';
 import { ByteUtil } from 'src/app/utilities/byte-util';
 import { FileUtil } from 'src/app/utilities/file-util';
 import { LogService } from '../log/log.service';
@@ -13,6 +14,15 @@ import { RomService } from '../rom/rom.service';
 export class FileProcessingService {
 
   constructor(private romService: RomService, private log: LogService) { }
+
+  async getEncryptedBinaryAndKeyBytes(zipFile: File): Promise<{ binary: Uint8Array, keyBytes: Uint8Array }> {
+    const rom = new Cps2Rom(zipFile);
+    await rom.read();
+    const binary = rom.getBinary()!;
+    const keyFile = rom.getFiles()!.find((file) => file.name === 'vsav.key');
+    const keyBytes = await FileUtil.convertFileToUint8Array(keyFile!);
+    return { binary: binary, keyBytes: keyBytes }
+  }
 
   async processPatchFiles(files: File[]): Promise<ProcessedPatchFiles> {
     const zipFile = files.find((file) => FileUtil.fileHasExtension(file, 'zip'));

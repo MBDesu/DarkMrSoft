@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { Cps2Crypto } from 'src/app/crypto/cps2-crypto';
 import { ProcessedPatchFiles } from 'src/app/models/rom';
+import { FullRomMap } from 'src/app/models/rom-map';
 import { ByteUtil } from 'src/app/utilities/byte-util';
 import { FileUtil } from 'src/app/utilities/file-util';
 import { RomService } from '../rom/rom.service';
-import { FullRomMap } from 'src/app/models/rom-map';
 
 @Injectable({
   providedIn: 'root'
@@ -12,6 +13,13 @@ import { FullRomMap } from 'src/app/models/rom-map';
 export class OperationsService {
 
   constructor(private romService: RomService, private domSanitizer: DomSanitizer) { }
+
+  async decryptOpcodes(binary: Uint8Array, keyBytes: Uint8Array, outputFilename: string): Promise<SafeUrl> {
+    const crypter = new Cps2Crypto(binary, keyBytes);
+    const decryptedBinary = crypter.cps2Crypt();
+    const decryptedBinaryFile = FileUtil.createFileFromUint8Array(decryptedBinary, outputFilename);
+    return this.domSanitizer.bypassSecurityTrustUrl(window.URL.createObjectURL(decryptedBinaryFile));
+  }
 
   async applyMraPatch(processedPatchFiles: ProcessedPatchFiles): Promise<{ modifiedRomFiles: File[], downloadLink: SafeUrl }> {
     const modifiedRomParts = await this.romService.applyMraPatch(processedPatchFiles.processedRomFiles.romMap, processedPatchFiles.processedMraFile.patches);
