@@ -2,6 +2,8 @@
 
 DarkMrSoft is a web app utility for patching CPS2 ROMs with the patches found in a MiSTer `.mra` file. The immediate goal of this project is to service Darksoft/MAME users who would like to use these ROMhacks on those platforms, with a longer term goal of eventually being an in-browser toolchain for CPS2 ROMhacking in general.
 
+Much of the ROM manipulation that this web app does is available as a separate [npm package](https://www.npmjs.com/package/cps2-utils), [cps2-utils](https://github.com/MBDesu/cps2-utils.git)!
+
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 16.0.2.
 
 ## Development server
