@@ -64,17 +64,21 @@ export class HexdumpComponent implements OnInit {
     this.hexdumpRows = [];
     for (let i = startingOffset; i < array.length; i += bytesPerLine) {
       const lineBytes = array.slice(i, i + bytesPerLine);
-      const hexLine = Array.from(lineBytes)
+      const lineByteArray = Array.from(lineBytes);
+
+      const hexLine = lineByteArray
         .map((byte) => byte.toString(16).padStart(2, '0'))
         .join(' ');
   
-      const asciiLine = Array.from(lineBytes)
+      const asciiLine = lineByteArray
         .map((byte) => (byte >= 32 && byte <= 126) ? String.fromCharCode(byte) : '.')
         .join('');
 
-      const offset = i.toString(16).padStart(6, '0');
+      const offset = i.toString(16).padStart(binary.length.toString(16).length, '0');
+
       this.hexdumpRows.push({ offset: offset, hex: hexLine.padEnd(bytesPerLine * 3 - 1), ascii: asciiLine });
     }
+    console.log(`binary length: 0x${binary.length.toString(16)}`)
   }
 
 }

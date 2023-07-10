@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Component, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
 import { AbstractControl, ControlValueAccessor, NG_VALIDATORS, NG_VALUE_ACCESSOR, ValidationErrors } from '@angular/forms';
 import { Observable, Subscription } from 'rxjs';
 import { FileDroppableConfig } from 'src/app/components/file-dropper/file-dropper-config';
@@ -22,11 +22,12 @@ import { FileUtil } from 'src/app/utilities/file-util';
     },
   ]
 })
-export class FileDropperComponent implements OnDestroy, OnInit, ControlValueAccessor {
+export class FileDropperComponent implements OnChanges, OnDestroy, OnInit, ControlValueAccessor {
   @Input() config!: FileDroppableConfig;
   @Input() externalError!: Observable<string>;
   @Output() filesAdded = new EventEmitter<File[]>();
 
+  accept!: string;
   isDisabled = false;
   error = '';
   externalErrorSubscription!: Subscription;
@@ -50,15 +51,24 @@ export class FileDropperComponent implements OnDestroy, OnInit, ControlValueAcce
         this.error = error;
       });
     }
-    if (!this.config) {
+    if (!this.config || !this.config.allowedFileExtensions) {
       this.config = {
-        allowedFileExtensions: []
+        allowedFileExtensions: [ 'zip' ]
       };
     }
   }
 
   ngOnDestroy(): void {
     this.externalErrorSubscription?.unsubscribe();
+  }
+
+  // gross
+  ngOnChanges(): void {
+    this.accept = this.updateAccept();
+  }
+
+  private updateAccept(): string {
+    return this.config.allowedFileExtensions?.map((extension) => '.' + extension).join() ?? '';
   }
 
   // ControlValueAccessor implementation

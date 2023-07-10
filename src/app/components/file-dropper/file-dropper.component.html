@@ -3,7 +3,7 @@
     <button mat-mini-fab class="upload-button" (click)="fileUpload.click()">
       <mat-icon>file_upload</mat-icon>
     </button>
-    <input #fileUpload type="file" (change)="filesPicked($event)" [hidden]="true" accept=".ips,.mra,.zip" multiple />
+    <input #fileUpload type="file" (change)="filesPicked($event)" [hidden]="true" [accept]="accept" multiple />
     &nbsp; or drag files here
   </span>
 </div>

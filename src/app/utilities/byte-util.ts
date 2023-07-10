@@ -1,5 +1,3 @@
-import { Patch } from '../models/mra';
-
 export class ByteUtil {
    
   static swapBytePairs(array: Uint8Array): Uint8Array {
@@ -11,47 +9,14 @@ export class ByteUtil {
     return swappedArray;
   }
 
-  static calculateIpsBufferSize(patches: Patch[]): number {
-    const prefixLength = 5;
-    const offsetsAndLengths = 5 * patches.length;
-    const postfixLength = 3;
-    let totalSize = prefixLength + offsetsAndLengths + postfixLength;
-    patches.forEach((patch) => totalSize += patch.bytes.length);
-    return totalSize;
-  }
-
-  static getFFBytes(bytes: number): Uint8Array {
-    return new Uint8Array(bytes).fill(0xFF);
-  }
-
-  // not sure this is working properly
-  // static padUint8ArrayToLength(arr: Uint8Array, lengthInBytes: number, padWithByte = 0): Uint8Array {
-  //   if (arr.length >= lengthInBytes) return arr;
-  //   const result = new Uint8Array(lengthInBytes);
-  //   result.set(arr);
-  //   const diff = lengthInBytes - arr.length;
-  //   if (padWithByte >= 256) padWithByte = 0xff;
-  //   for (let i = diff; i < result.length; i++) {
-  //     result.set([padWithByte], i);
-  //   }
-  //   return result;
+  // static calculateIpsBufferSize(patches: Patch[]): number {
+  //   const prefixLength = 5;
+  //   const offsetsAndLengths = 5 * patches.length;
+  //   const postfixLength = 3;
+  //   let totalSize = prefixLength + offsetsAndLengths + postfixLength;
+  //   patches.forEach((patch) => totalSize += patch.bytes.length);
+  //   return totalSize;
   // }
-
-  static convertNumberToUint8Array(n: number, padToLength = 0, padValue = 0): Uint8Array {
-    if (!n) return new Uint8Array(0);
-    const arr = [];
-    arr.unshift(n & 255);
-    while (n >= 256) {
-      n = n >>> 8;
-      arr.unshift(n & 255);
-    }
-    if (padToLength) {
-      while (arr.length < padToLength) {
-        arr.unshift(padValue);
-      }
-    }
-    return new Uint8Array(arr);
-  }
 
   static getMachineEndianness(): string {
     const buffer = new ArrayBuffer(4);
@@ -67,18 +32,6 @@ export class ByteUtil {
     } else {
       return 'unknown';
     }
-  }
-
-  /**
-   * For use with the types of hex strings you find in a .mra file.
-   */
-  static convertDelimitedHexStringToUint8Array(hexString: string, delimeter = ' '): Uint8Array {
-    const bytesAsStrings = hexString.split(delimeter);
-    const buffer = new Uint8Array(bytesAsStrings.length);
-    for (let i = 0; i < buffer.length; i++) {
-      buffer[i] = Number(`0x${bytesAsStrings[i]}`)
-    }
-    return buffer;
   }
 
 }
