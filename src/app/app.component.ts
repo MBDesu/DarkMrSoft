@@ -2,8 +2,6 @@ import { Component } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
-import { ProcessedPatchFiles } from './models/rom';
-import { FileUtil } from './utilities/file-util';
 import { SupportedRomsModalComponent } from './components/supported-roms-modal/supported-roms-modal.component';
 
 @Component({
@@ -25,10 +23,7 @@ export class AppComponent {
 
   title = 'Dark Mr. Soft - CPS2 ROM Patcher';
   
-  combinedEncryptedBinary = new Uint8Array();
-  // combinedDecryptedBinary = new Uint8Array();
-  // combinedDecryptedModifiedBinary = new Uint8Array();
-  combinedEncryptedModifiedBinary = new Uint8Array();
+  binaries: { binary: Uint8Array, title: string, description: string }[] = [];
   dumps = false;
   error = '';
 
@@ -39,21 +34,11 @@ export class AppComponent {
     );
   }
 
-  async gotProcessedFiles(processedPatchFiles: ProcessedPatchFiles): Promise<void> {
-    if (processedPatchFiles) {
-      const concatenatedFiles = await FileUtil.concatenateFilesToUint8Array(processedPatchFiles.processedRomFiles.executableRomFiles);
-      this.combinedEncryptedBinary = concatenatedFiles;
+  async gotBinary(binary: { binary: Uint8Array, title: string, description: string }): Promise<void> {
+    if (binary) {
+      this.binaries.push(binary);
     } else {
-      this.combinedEncryptedBinary = new Uint8Array();
-    }
-  }
-
-  async gotPatchedBinary(patchedBinaryFiles: File[]): Promise<void> {
-    if (patchedBinaryFiles) {
-      const concatenatedFiles = await FileUtil.concatenateFilesToUint8Array(patchedBinaryFiles);
-      this.combinedEncryptedModifiedBinary = concatenatedFiles;
-    } else {
-      this.combinedEncryptedModifiedBinary = new Uint8Array();
+      this.binaries = [];
     }
   }
 

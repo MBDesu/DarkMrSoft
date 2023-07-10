@@ -1,13 +1,11 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { Cps2Crypto, Cps2Rom } from 'cps2-utils';
 import { Subject } from 'rxjs';
-import { ProcessedPatchFiles } from 'src/app/models/rom';
-import { FullRomMap } from 'src/app/models/rom-map';
-import { FileProcessingService } from 'src/app/services/file-processing/file-processing.service';
-import { OperationsService } from 'src/app/services/operations/operations.service';
 import { FileUtil } from 'src/app/utilities/file-util';
 import { FileDroppableConfig } from '../file-dropper/file-dropper-config';
+import { WIZARD_CONFIG } from './wizard.constants';
 
 @Component({
   selector: 'cps2-wizard',
@@ -16,169 +14,183 @@ import { FileDroppableConfig } from '../file-dropper/file-dropper-config';
 })
 export class WizardComponent {
 
-  @Output() gotProcessedFiles = new EventEmitter<ProcessedPatchFiles>();
-  @Output() gotPatchedBinary = new EventEmitter<File[]>();
-  @Output() gotBinaryAndKey = new EventEmitter<{ binary: Uint8Array, keyBytes: Uint8Array }>();
+  @Output() gotBinary = new EventEmitter<{ binary: Uint8Array, title: string, description: string }>();
 
-  dropperConfigs: { [key: string]: FileDroppableConfig } = {
-    'decrypt_opcodes': {
-      minFiles: 1,
-      maxFiles: 1,
-      allowedFileExtensions: [ 'zip' ],
-      uniqueExtensions: true,
-    },
+  config = WIZARD_CONFIG;
+  cps2Rom!: Cps2Rom;
+
+  // TODO: figure out how to maybe programmatically set these as well
+  doOperation: { [operation: string]: { go: () => Promise<void> } } = {
     'to_mame': {
-      minFiles: 2,
-      maxFiles: 2,
-      allowedFileExtensions: [ 'mra', 'zip' ],
-      uniqueExtensions: true,
+      go: () => this.applyMraPatch(),
     },
     'to_darksoft': {
-      minFiles: 1,
-      maxFiles: 1,
-      allowedFileExtensions: [ 'zip' ],
-      uniqueExtensions: true,
+      go: () => this.convertToDarksoft(),
     },
-    'ips_to_mra': {
-      minFiles: 1,
-      maxFiles: 1,
-      allowedFileExtensions: [ 'ips' ],
-      uniqueExtensions: true,
+    'concatenate': {
+      go: () => this.concatenateExecutableRegions(),
     },
-    'mra_to_ips': {
-      minFiles: 2,
-      maxFiles: 2,
-      allowedFileExtensions: [ 'mra', 'zip' ],
-      uniqueExtensions: true,
-    }
+    'decrypt_zip_opcodes': {
+      go: () => this.decryptZipOpcodes(),
+    },
+    'decrypt_bin_opcodes': {
+      go: () => this.decryptBinOpcodes(),
+    },
+    'encrypt_opcodes': {
+      go: () => this.encryptOpcodes(),
+    },
   };
 
-  helpText: { [operation: string]: string } = {
-    'to_mame':         'Upload a MAME ROM and a .mra file that contains the patches you wish to apply. The output will be a patched MAME format ROM.',
-    'to_darksoft':     'Upload a MAME ROM to convert to the Darksoft file format. The output will be a .zip file containing all of a Darksoft converted ROM. You must create your own NAME file.',
-    'decrypt_opcodes': 'Upload a MAME ROM that you wish to decrypt the opcodes of',
-    'ips_to_mra':      'Upload a MAME ROM and a .ips file that contains the patches you wish to convert to .mra format. The output will be a .mra file that contains only the <patch>es (you must complete the file yourself).',
-    'mra_to_ips':      'Upload a MAME ROM and a .mra file that contains the patches you wish to convert to .ips format. The output will be a .zip containing .ips files named the same as the ROM parts you need to apply the patches to.',
-  }
-
-  operationButtonText: { [operation: string]: string } = {
-    'to_mame':         'Apply Patch',
-    'to_darksoft':     'Convert MAME to Darksoft',
-    'decrypt_opcodes': 'Decrypt opcodes',
-    'ips_to_mra':      'Convert .ips to .mra',
-    'mra_to_ips':      'Convert .mra to .ips',
-  };
-
-  binaryAndKey!: { binary: Uint8Array, keyBytes: Uint8Array };
   downloadLink: SafeUrl = '';
   fileDropperConfig!: FileDroppableConfig;
-  fileProcessingError = '';
-  gotFileProcessingError = new Subject<string>();
-  outputFilename = '';
-  processedPatchFiles!: ProcessedPatchFiles;
-  processedRomMap!: FullRomMap;
-  processing = false;
 
-  operationForm = this.fb.group({
-    operation: ['', Validators.required]
-  });
   fileDropperForm = this.fb.group({
     fileDropper: ['', Validators.required]
   });
 
+  fileProcessingError = '';
+  files!: File[];
+  gotFileProcessingError = new Subject<string>();
+
+  operationForm = this.fb.group({
+    operation: ['', Validators.required]
+  });
+
+  operations = Object.keys(this.config.operations);
+  outputFilename = '';
+  patchFile!: File;
+  processing = false;
+
   constructor(
     private fb: FormBuilder,
-    private fileProcessingService: FileProcessingService,
-    private operationsService: OperationsService,
-    private domSanitizer: DomSanitizer
+    private domSanitizer: DomSanitizer,
   ) { }
 
-  filesAdded(files: File[]): void {
+  async filesAdded(files: File[]): Promise<void> {
+    this.gotBinary.emit();
+    this.downloadLink = '';
+    this.outputFilename = '';
     this.fileProcessingError = '';
     const operation = this.operationForm.get('operation')?.value || 'none';
 
-    switch (operation) {
-      case 'decrypt_opcodes':
-        this.processing = true;
-        this.fileProcessingService.getEncryptedBinaryAndKeyBytes(files[0]).then((binaryAndKey) => {
-          this.downloadLink = '';
-          this.gotBinaryAndKey.emit(binaryAndKey);
-          this.binaryAndKey = binaryAndKey;
-          this.outputFilename = FileUtil.getFileName(files[0], false) + '.bin';
-          this.processing = false;
-        }, (error) => {
-          this.fileProcessingError = error.message;
-          this.gotFileProcessingError.next(this.fileProcessingError);
-          this.processing = false;
-        });
-        break;
-      case 'to_mame':
-      case 'mra_to_ips':
-        this.processing = true;
-        this.fileProcessingService.processPatchFiles(files).then((processedPatchFiles) => {
-          this.downloadLink = '';
-          this.gotFileProcessingError.next('');
-          this.gotProcessedFiles.emit();
-          this.gotPatchedBinary.emit();
-
-          this.processedPatchFiles = processedPatchFiles;
-          this.outputFilename = files.find((file) => FileUtil.fileHasExtension(file, 'zip'))?.name || 'rom.zip';
-          this.gotProcessedFiles.emit(this.processedPatchFiles);
-          this.processing = false;
-        }, (error) => {
-          this.fileProcessingError = error.message;
-          this.gotFileProcessingError.next(this.fileProcessingError);
-          this.processing = false;
-        });
-        break;
-
-      case 'to_darksoft':
-        this.processing = true;
-        this.fileProcessingService.processRomFilesForDarksoftConversion(files[0]).then((fullRomMap) => {
-          this.downloadLink = '';
-          this.gotFileProcessingError.next('');
-          this.gotProcessedFiles.emit();
-          this.gotPatchedBinary.emit();
-
-          this.outputFilename = files[0].name;
-          this.processedRomMap = fullRomMap;
-          this.processing = false;
-        }, (error) => {
-          this.fileProcessingError = error.message;
-          this.gotFileProcessingError.next(this.fileProcessingError);
-          this.processing = false;
-        });
-        break;
-
-      default:
-        break;
+    if (this.config.operations[operation] && this.config.operations[operation].metadata.hasRom) {
+      const romFile = files.find((file) => FileUtil.fileHasExtension(file, 'zip')); // has to exist
+      if (!romFile) { // impossible
+        throw new Error('Somehow, ROM zip not found');
+      }
+      this.cps2Rom = new Cps2Rom(romFile);
+      await this.processRom();
     }
+    if (this.config.operations[operation] && this.config.operations[operation].metadata.hasMra) {
+      const mraFile = files.find((file) => FileUtil.fileHasExtension(file, 'mra'));
+      if (!mraFile) { // impossible
+        throw new Error('Somehow, .mra not found');
+      }
+      this.patchFile = mraFile;
+    }
+    this.files = files;
   }
 
   async performOperation(): Promise<void> {
-    const operation = this.operationForm.get('operation')?.value || 'to_mame';
-    if (operation === 'to_mame') {
-      this.processing = true;
-      const result = await this.operationsService.applyMraPatch(this.processedPatchFiles);
-      this.downloadLink = result.downloadLink;
-      this.gotPatchedBinary.emit(result.modifiedRomFiles);
+    const operation = this.operationForm.get('operation')?.value || '';
+    if (this.doOperation[operation]) {
+      await this.doOperation[operation].go();
+    }
+  }
+
+  private async applyMraPatch(): Promise<void> {
+    this.processing = true;
+    const modifiedObject = await this.cps2Rom.patchWith(this.patchFile);
+    const modifiedBinary = this.cps2Rom.getModifiedBinary();
+    const modifiedRom = modifiedObject.getModifiedRom();
+    if (!modifiedRom || !modifiedBinary) {
       this.processing = false;
-    } else if (operation === 'to_darksoft') {
-      this.processing = true;
-      const result = await this.operationsService.convertMameToDarksoft(this.processedRomMap);
-      this.downloadLink = result;
+      return Promise.reject(new Error('Somehow, something went wrong with patching'));
+    }
+    this.gotBinary.emit({ binary: modifiedBinary, title: 'Encrypted ROM', description: 'Encrypted, modified' });
+    this.setDownloadLink(modifiedRom);
+    this.processing = false;
+  }
+
+  private async convertToDarksoft(): Promise<void> {
+    this.processing = true;
+    await this.cps2Rom.convertToDarksoft();
+    const darksoftRom = this.cps2Rom.getDarksoftRom();
+    if (!darksoftRom) {
+      throw new Error('Somehow, something went wrong with Darksoft conversion');
+    }
+    this.setDownloadLink(darksoftRom);
+    this.processing = false;
+  }
+
+  private async concatenateExecutableRegions(): Promise<void> {
+    this.processing = true;
+    const concatenatedBinary = this.cps2Rom.getBinary();
+    if (!concatenatedBinary) {
+      throw new Error('Somehow, the concatenated binary doesn\'t exist');
+    }
+    const concatenatedBinaryFile = FileUtil.createFileFromUint8Array(concatenatedBinary, this.cps2Rom.getName() + '.bin');
+    this.setDownloadLink(concatenatedBinaryFile);
+    this.processing = false;
+  }
+
+  private async decryptZipOpcodes(): Promise<void> {
+    this.processing = true;
+    const decryptedOpcodes = (await this.cps2Rom.decryptOpcodes()).getDecryptedOpcodes();
+    if (!decryptedOpcodes) { // unlikely
       this.processing = false;
-    } else if (operation === 'mra_to_ips') {
-      this.processing = true;
-      const result = await this.operationsService.convertMraToIps(this.processedPatchFiles);
-      this.downloadLink = result;
-      this.processing = false;
-    } else if (operation === 'decrypt_opcodes') {
-      this.processing = true;
-      const result = await this.operationsService.decryptOpcodes(this.binaryAndKey.binary, this.binaryAndKey.keyBytes, this.outputFilename);
-      this.downloadLink = result;
+      return Promise.reject(new Error('Somehow, something went wrong with decryption'));
+    }
+    this.gotBinary.emit({ binary: decryptedOpcodes, title: 'Decrypted ROM', description: 'Decrypted, unmodified' });
+    const decryptedBinaryFile = FileUtil.createFileFromUint8Array(decryptedOpcodes, this.cps2Rom.getName() + '.bin');
+    this.setDownloadLink(decryptedBinaryFile);
+    this.processing = false;
+  }
+
+  private async decryptBinOpcodes(): Promise<void> {
+    this.processing = true;
+    const binFile = this.files.find((file) => FileUtil.fileHasExtension(file, 'bin'));
+    if (!binFile) {
+      return Promise.reject('Somehow missing .bin file');
+    }
+    const decryptedBinaryFile = await Cps2Crypto.decryptBinOpcodes(binFile, this.cps2Rom);
+    this.setDownloadLink(decryptedBinaryFile);
+    this.processing = false;
+  }
+
+  private async encryptOpcodes(): Promise<void> {
+    this.processing = true;
+    const binFile = this.files.find((file) => FileUtil.fileHasExtension(file, 'bin'));
+    if (!binFile) {
+      return Promise.reject('Somehow missing .bin file');
+    }
+    const encryptedBinaryFile = await Cps2Crypto.encryptBinOpcodes(binFile, this.cps2Rom);
+    this.setDownloadLink(encryptedBinaryFile);
+    this.processing = false;
+  }
+
+  private async processRom(): Promise<void> {
+    this.processing = true;
+    try {
+      await this.cps2Rom.read();
+      await this.cps2Rom.processExecutable();
+      this.gotBinary.emit({ binary: this.cps2Rom.getBinary() ?? new Uint8Array(), title: 'Encrypted ROM', description: 'Encrypted, unmodified' });
+      this.downloadLink = '';
+    } catch (error) {
+      this.gotError(error);
+    } finally {
       this.processing = false;
     }
+  }
+
+  private gotError(error: any): void {
+    this.fileProcessingError = error.message;
+    this.gotFileProcessingError.next(this.fileProcessingError);
+  }
+
+  private setDownloadLink(file: File): void {
+    this.outputFilename = file.name;
+    this.downloadLink = this.domSanitizer.bypassSecurityTrustUrl(window.URL.createObjectURL(file));
   }
 
   getErrors(form: FormGroup): string[] {

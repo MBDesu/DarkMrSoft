@@ -8,7 +8,7 @@
   <div class="toolbar-item">
     <mat-form-field subscriptSizing="dynamic">
       <mat-label>Bytes per line</mat-label>
-      <input matInput type="text" placeholder="16" (keyup)="onBytesPerLineChange($event)" />
+      <input matInput type="text" placeholder="16" (blur)="onBytesPerLineChange($event)" />
     </mat-form-field>
   </div>
   <div class="toolbar-item">
@@ -19,6 +19,6 @@
     <span>&nbsp;Endian</span>
   </div>
 </div>
-<cdk-virtual-scroll-viewport itemSize="17" minBufferPx="200" maxBufferPx="400" class="viewport">
+<cdk-virtual-scroll-viewport itemSize="20" minBufferPx="400" maxBufferPx="800" class="viewport">
   <code *cdkVirtualFor="let row of hexdumpRows; trackBy: trackHex">{{ row.offset }} {{ row.hex }} {{ row.ascii }}<br /></code>
 </cdk-virtual-scroll-viewport>
