@@ -83,6 +83,22 @@ export const WIZARD_CONFIG: WizardConfig = {
       },
     },
 
+    'split': {
+      dropperConfig: {
+        minFiles: 2,
+        maxFiles: 2,
+        allowedFileExtensions: [ 'bin', 'zip' ],
+        uniqueExtensions: true,
+      },
+      labelHtml: 'Split executable <code>.bin</code> &#8594 MAME ROM files',
+      helpText: 'Upload a concatenated .bin and the MAME ROM it was split from. The output will be a .zip containing the split ROM files.',
+      operationButtonText: 'Split Executable',
+      metadata: {
+        hasRom: true,
+        hasMra: false,
+      },
+    },
+
     'decrypt_zip_opcodes': {
       dropperConfig: {
         minFiles: 1,

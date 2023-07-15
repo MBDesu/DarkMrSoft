@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
-import { Cps2Crypto, Cps2Rom } from 'cps2-utils';
+import { Cps2Crypto, Cps2Rom, Cps2Utils } from 'cps2-utils';
 import { Subject } from 'rxjs';
 import { FileUtil } from 'src/app/utilities/file-util';
 import { FileDroppableConfig } from '../file-dropper/file-dropper-config';
@@ -29,6 +29,9 @@ export class WizardComponent {
     },
     'concatenate': {
       go: () => this.concatenateExecutableRegions(),
+    },
+    'split': {
+      go: () => this.splitExecutableBin(),
     },
     'decrypt_zip_opcodes': {
       go: () => this.decryptZipOpcodes(),
@@ -131,6 +134,17 @@ export class WizardComponent {
     }
     const concatenatedBinaryFile = FileUtil.createFileFromUint8Array(concatenatedBinary, this.cps2Rom.getName() + '.bin');
     this.setDownloadLink(concatenatedBinaryFile);
+    this.processing = false;
+  }
+
+  private async splitExecutableBin(): Promise<void> {
+    this.processing = true;
+    const binFile = this.files.find((file) => FileUtil.fileHasExtension(file, 'bin'));
+    if (!binFile) {
+      return Promise.reject('Somehow missing .bin file');
+    }
+    const zip = await Cps2Utils.splitExecutableBinToFiles(binFile, this.cps2Rom);
+    this.setDownloadLink(zip);
     this.processing = false;
   }
 
