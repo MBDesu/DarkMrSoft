@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "dist/darkmrsoft",
+    "public": "dist/darkmrsoft/browser",
     "ignore": [
       "firebase.json",
       "**/.*",

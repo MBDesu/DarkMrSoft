@@ -1,33 +1,45 @@
-<div *ngIf="!filesReady" class="drop-box">
-  <span>
-    <button mat-mini-fab class="upload-button" (click)="fileUpload.click()">
-      <mat-icon>file_upload</mat-icon>
-    </button>
-    <input #fileUpload type="file" (change)="filesPicked($event)" [hidden]="true" [accept]="accept" multiple />
-    &nbsp; or drag files here
-  </span>
-</div>
-<br />
-<div *ngIf="error">
-  <span class="error">{{ error }}</span>
-</div>
-<br />
-<div *ngFor="let file of files; let i = index">
-  <span *ngIf="file">
-    <button mat-mini-fab [disabled]="filesCommitted" (click)="fileDeleted(i)">
-      <mat-icon>delete</mat-icon>
-    </button>
-    <mat-icon>
-      &nbsp;{{ file.name.endsWith('.zip') ? 'folder_zip' : 'text_snippet' }}
-    </mat-icon>&nbsp;&nbsp;{{ file.name.length > 30 ? (file.name | slice:0:30) + '...' + (file.name | slice:file.name.length - 3:file.name.length) : file.name }}
-  </span>
-</div>
-<br />
-<div *ngIf="filesReady">
-  <button mat-raised-button color="primary" [disabled]="filesCommitted" (click)="commitFiles()">Upload Files</button>
-  <div *ngIf="filesCommitted">
-    <br />
-    Files uploaded.
+@if (!filesReady) {
+  <div class="drop-box">
+    <span>
+      <button mat-mini-fab class="upload-button" (click)="fileUpload.click()">
+        <mat-icon>file_upload</mat-icon>
+      </button>
+      <input #fileUpload type="file" (change)="filesPicked($event)" [hidden]="true" [accept]="accept" multiple />
+      &nbsp; or drag files here
+    </span>
   </div>
-</div>
+}
+<br />
+@if (error) {
+  <div>
+    <span class="error">{{ error }}</span>
+  </div>
+}
+<br />
+@for (file of files; track file; let i = $index) {
+  <div>
+  @if (file) {
+    <span>
+      <button mat-mini-fab [disabled]="filesCommitted" (click)="fileDeleted(i)">
+        <mat-icon>delete</mat-icon>
+      </button>
+      <mat-icon>
+        &nbsp;{{ file.name.endsWith('.zip') ? 'folder_zip' : 'text_snippet' }}
+      </mat-icon>&nbsp;&nbsp;{{ file.name.length > 30 ? (file.name | slice:0:30) + '...' + (file.name | slice:file.name.length - 3:file.name.length) : file.name }}
+    </span>
+  }
+  </div>
+}
+<br />
+@if (filesReady) {
+  <div>
+  <button mat-raised-button color="primary" [disabled]="filesCommitted" (click)="commitFiles()">Upload Files</button>
+  @if (filesCommitted) {
+    <div>
+      <br />
+      Files uploaded.
+    </div>
+  }
+  </div>
+}
 <br />

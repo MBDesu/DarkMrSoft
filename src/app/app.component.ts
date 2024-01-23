@@ -15,12 +15,6 @@ export class AppComponent {
   // .mra file. Maybe display a warning if something doesn't match? Or error
   // out. I dunno.
 
-  // TODO: add .ips to .mra conversion
-
-  // below *sort of* done... sort of. Needs revision.
-  // TODO: re-regex the MAME ROM definitions so that we can patch non-executable
-  // regions (graphics, etc.)
-
   title = 'Dark Mr. Soft - CPS2 ROM Patcher';
   
   binaries: { binary: Uint8Array, title: string, description: string }[] = [];

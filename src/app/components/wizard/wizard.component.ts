@@ -42,6 +42,9 @@ export class WizardComponent {
     'encrypt_opcodes': {
       go: () => this.encryptOpcodes(),
     },
+    // 'get_graphics': {
+    //   go: () => this.getGraphicsBinary(),
+    // },
   };
 
   downloadLink: SafeUrl = '';
@@ -182,6 +185,19 @@ export class WizardComponent {
     this.setDownloadLink(encryptedBinaryFile);
     this.processing = false;
   }
+
+  // private async getGraphicsBinary(): Promise<void> {
+  //   this.processing = true;
+  //   await this.cps2Rom.processGraphics();
+  //   const graphicsBinary = this.cps2Rom.getGraphicsBinary();
+  //   if (!(graphicsBinary && graphicsBinary.length)) {
+  //     return Promise.reject(new Error('Something went wrong with graphics processing'));
+  //   }
+  //   this.gotBinary.emit({ binary: graphicsBinary, title: 'Graphics Data', description: 'Unmodified' });
+  //   const graphicsFile = FileUtil.createFileFromUint8Array(graphicsBinary, `${this.cps2Rom.getName()}_gfx.bin`);
+  //   this.setDownloadLink(graphicsFile);
+  //   this.processing = false;
+  // }
 
   private async processRom(): Promise<void> {
     this.processing = true;

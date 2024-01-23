@@ -145,7 +145,7 @@ export const WIZARD_CONFIG: WizardConfig = {
         hasRom: true,
         hasMra: false,
       }
-    }
+    },
 
     // 'get_graphics': {
     //   dropperConfig: {

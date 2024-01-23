@@ -36,17 +36,24 @@
       options are being set and set them manually.</p>
     </div>
     <br />
-    <mat-slide-toggle *ngIf="binaries.length" [(ngModel)]="dumps">Display hex dumps</mat-slide-toggle><br />
+    @if (binaries.length) {
+      <mat-slide-toggle [(ngModel)]="dumps">Display hex dumps</mat-slide-toggle>
+    }
     <br />
-    <div *ngIf="binaries.length && dumps">
-      <mat-expansion-panel *ngFor="let binary of binaries" class="hex-panel">
-        <mat-expansion-panel-header>
-          <mat-panel-title>{{ binary.title }}</mat-panel-title>
-          <mat-panel-description>{{ binary.description }}</mat-panel-description>
-        </mat-expansion-panel-header>
-        <cps2-hexdump [binary]="binary.binary"></cps2-hexdump>
-      </mat-expansion-panel>
-    </div>
+    <br />
+    @if (binaries.length && dumps) {
+      <div>
+      @for (binary of binaries; track binary) {
+        <mat-expansion-panel class="hex-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title>{{ binary.title }}</mat-panel-title>
+            <mat-panel-description>{{ binary.description }}</mat-panel-description>
+          </mat-expansion-panel-header>
+          <cps2-hexdump [binary]="binary.binary"></cps2-hexdump>
+        </mat-expansion-panel>
+      }
+      </div>
+    }
     <br />
     <cps2-wizard (gotBinary)="gotBinary($event)"></cps2-wizard>
   </mat-sidenav-content>

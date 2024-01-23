@@ -4,7 +4,9 @@
       <ng-template matStepLabel>Select operation</ng-template>
       <mat-label>What would you like to do?</mat-label>
       <mat-radio-group class="radio-group" formControlName="operation">
-        <mat-radio-button *ngFor="let operation of operations" [value]="operation" labelPosition="after"><div [innerHTML]="config.operations[operation].labelHtml"></div></mat-radio-button>
+      @for (operation of operations; track operation) {
+        <mat-radio-button [value]="operation" labelPosition="after"><div [innerHTML]="config.operations[operation].labelHtml"></div></mat-radio-button>
+      }
       </mat-radio-group>
       <div>
         <button mat-raised-button matStepperNext [disabled]="!operationForm.valid">Next</button>
@@ -17,7 +19,9 @@
       <div>
         <p>{{ config.operations[operationForm.get('operation')?.value || 'to_mame'].helpText }}</p>
       </div>
-      <mat-spinner *ngIf="processing"></mat-spinner>
+      @if (processing) {
+        <mat-spinner></mat-spinner>
+      }
       <cps2-file-dropper
         [hidden]="processing"
         formControlName="fileDropper"
@@ -33,16 +37,22 @@
   </mat-step>
   <mat-step [editable]="false">
     <ng-template matStepLabel>Do operation</ng-template>
-    <mat-spinner *ngIf="processing"></mat-spinner>
-    <button
-      mat-raised-button
-      color="primary"
-      *ngIf="config.operations[operationForm.get('operation')?.value || 'to_mame'].operationButtonText && !processing"
-      (click)="performOperation()"
-    >
-      {{ config.operations[operationForm.get('operation')?.value || 'to_mame'].operationButtonText }}
-    </button>&nbsp;
-    <button mat-raised-button *ngIf="downloadLink" color="primary" (click)="download.click()">Download</button>
+    @if (processing) {
+      <mat-spinner></mat-spinner>
+    }
+    @if (config.operations[operationForm.get('operation')?.value || 'to_mame'].operationButtonText && !processing) {
+      <button
+        mat-raised-button
+        color="primary"
+        (click)="performOperation()"
+      >
+        {{ config.operations[operationForm.get('operation')?.value || 'to_mame'].operationButtonText }}
+      </button>
+    }
+    &nbsp;
+    @if (downloadLink) {
+      <button mat-raised-button color="primary" (click)="download.click()">Download</button>
+    }
     <a [href]="downloadLink" [hidden]="true" [download]="outputFilename" #download></a>
     <br />
     <br />
