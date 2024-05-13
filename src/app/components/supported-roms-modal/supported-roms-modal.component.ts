@@ -4,8 +4,6 @@ import { MatSort, MatSortable } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { Cps2Utils } from 'cps2-utils';
 
-type RomDefinition = { name: string, supportsPatching: string, supportsConvertingToDarksoft: string };
-
 @Component({
   selector: 'cps2-supported-roms-modal',
   templateUrl: './supported-roms-modal.component.html',
