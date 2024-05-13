@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
+import { HelpModalComponent } from './components/help-modal/help-modal.component';
 import { SupportedRomsModalComponent } from './components/supported-roms-modal/supported-roms-modal.component';
 
 @Component({
@@ -16,10 +17,10 @@ export class AppComponent {
   // out. I dunno.
 
   title = 'Dark Mr. Soft - CPS2 ROM Patcher';
-  
-  binaries: { binary: Uint8Array, title: string, description: string }[] = [];
-  dumps = false;
-  error = '';
+
+  protected binaries: { binary: Uint8Array, title: string, description: string }[] = [];
+  protected dumps = false;
+  protected error = '';
 
   constructor(private dialog: MatDialog, private matIconRegistry: MatIconRegistry, private sanitizer: DomSanitizer) {
     this.matIconRegistry.addSvgIcon(
@@ -28,7 +29,7 @@ export class AppComponent {
     );
   }
 
-  async gotBinary(binary: { binary: Uint8Array, title: string, description: string }): Promise<void> {
+  protected async gotBinary(binary: { binary: Uint8Array, title: string, description: string }): Promise<void> {
     if (binary) {
       this.binaries.push(binary);
     } else {
@@ -36,8 +37,12 @@ export class AppComponent {
     }
   }
 
-  openSupportModal(): void {
+  protected openSupportModal(): void {
     this.dialog.open(SupportedRomsModalComponent, {});
+  }
+
+  protected openHelpModal(): void {
+    this.dialog.open(HelpModalComponent, {});
   }
 
 }

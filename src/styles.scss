@@ -1,3 +1,67 @@
+@use '@angular/material-experimental' as matx;
+@use '@angular/material' as mat;
+@use '@angular/material/core/theming/theming' as theming;
+
+theming.$theme-legacy-inspection-api-compatibility: false;
+
+@function create-theme($type: dark, $density: 0, $primary: matx.$m3-cyan-palette, $tertiary: matx.$m3-orange-palette) {
+  @return matx.define-theme((
+    color: (
+      theme-type: $type,
+      primary: $primary,
+      tertiary: $tertiary,
+    ),
+    density: (
+      scale: $density,
+    ),
+  ))
+}
+
+$dark-theme: create-theme();
+$light-theme: create-theme($type: light, $density: 0, $primary: matx.$m3-rose-palette, $tertiary: matx.$m3-red-palette);
+
+@include mat.core();
+
+@mixin get-theme-color($prop, $theme, $role) {
+  #{$prop}: mat.get-theme-color($theme, $role);
+}
+
+@mixin get-component-colors($theme) {
+  @include get-theme-color(--mdc-elevated-card-container-color, $theme, surface-container);
+  @include get-theme-color(--mat-expansion-container-background-color, $theme, surface-container);
+  @include get-theme-color(--mat-sidenav-container-background-color, $theme, surface-container);
+  @include get-theme-color(--mat-toolbar-container-background-color, $theme, primary-container);
+  @include get-theme-color(--mat-toolbar-container-text-color, $theme, primary);
+  @include get-theme-color(--mdc-switch-selected-icon-color, $theme, primary);
+  @include get-theme-color(--mat-menu-container-color, $theme, surface-container-highest);
+}
+
+@mixin get-theme-props() {
+  --mat-sidenav-container-shape: 0px;
+  --mat-list-active-indicator-shape: 0px;
+}
+
+html {
+  @include mat.all-component-themes($dark-theme);
+  @include get-component-colors($dark-theme);
+  @include mat.typography-hierarchy($dark-theme, $back-compat: true);
+  @include get-theme-props();
+
+  &.strong-focus {
+    @include mat.strong-focus-indicators-color($dark-theme);
+  }
+
+  .app-toolbar {
+    .mat-mdc-icon-button {
+      @include get-theme-color(--mdc-icon-button-icon-color, $dark-theme, primary)
+    }
+  }
+}
+
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
-a { color: #c2185b; font-weight: bold; text-decoration: none; }
+a:not(.mat-mdc-button-base) {
+  color: #00dddd;
+  font-weight: bold;
+  text-decoration: none;
+}

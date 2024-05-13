@@ -1,0 +1,15 @@
+.credit {
+  a {
+    text-decoration: inherit;
+    color: inherit;
+    white-space: nowrap;
+  }
+
+  mat-icon {
+    transform: scale(0.75);
+    height: 18px;
+    width: 18px;
+    vertical-align: text-bottom;
+    margin-right: -0.5em;
+  }
+}
