@@ -117,9 +117,9 @@ export const WIZARD_CONFIG: WizardConfig = {
 
     'decrypt_bin_opcodes': {
       dropperConfig: {
-        minFiles: 1,
-        maxFiles: 1,
-        allowedFileExtensions: [ 'bin' ],
+        minFiles: 2,
+        maxFiles: 2,
+        allowedFileExtensions: [ 'bin', 'zip' ],
         uniqueExtensions: true,
       },
       labelHtml: 'Decrypt MAME ROM opcodes <code>.bin</code> &#8594 <code>.bin</code>',
