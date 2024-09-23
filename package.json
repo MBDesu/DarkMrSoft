@@ -23,7 +23,7 @@
     "@angular/platform-browser": "^17.3.8",
     "@angular/platform-browser-dynamic": "^17.3.8",
     "@angular/router": "^17.3.8",
-    "cps2-utils": "^0.1.4",
+    "cps2-utils": "^0.1.5",
     "firebase": "^10.7.2",
     "rxjs": "^6.5.3 || ^7.4.0",
     "tslib": "^2.3.0",
